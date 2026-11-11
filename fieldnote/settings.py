@@ -34,8 +34,11 @@ def database_config():
             "USER": unquote(parsed.username or ""),
             "PASSWORD": unquote(parsed.password or ""),
             "HOST": parsed.hostname or "",
-            "PORT": parsed.port or "",
-        }
+            "PORT": parsed.port or 5432,
+            "OPTIONS": {
+                "sslmode": "require",
+            },
+        },
     if parsed.scheme in {"mysql", "mysql+mysqldb"}:
         return {
             "ENGINE": "django.db.backends.mysql",
