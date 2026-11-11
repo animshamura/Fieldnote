@@ -126,7 +126,7 @@ The Python dependencies are listed in [`requirements.txt`](requirements.txt). No
 
 ## Run locally
 
-The checked-out local `.env` file supplies development settings. It is ignored by Git and excluded from Vercel deployments. The commands below use the default SQLite database at `instance/business.db` and start Django's development server on `127.0.0.1:5000`.
+The checked-out local `.env` file supplies development settings. To enable the local platform-admin login, set both `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` in that file; they are blank by default. It is ignored by Git and excluded from Vercel deployments. The commands below use the default SQLite database at `instance/business.db` and start Django's development server on `127.0.0.1:5000`.
 
 ### Windows (PowerShell)
 
