@@ -122,11 +122,11 @@ Deleting a workspace is destructive. The admin must enter both the exact workspa
 - Windows, macOS, or Linux.
 - Internet access in the browser to load React modules from `esm.sh` and hosted Google Fonts.
 
-The Python dependencies are listed in [`requirement.txt`](requirement.txt). Node.js is not required for the current app.
+The Python dependencies are listed in [`requirements.txt`](requirements.txt). Node.js is not required for the current app.
 
 ## Run locally
 
-The commands below use the default SQLite database at `instance/business.db` and start Django's development server on `127.0.0.1:5000`.
+The checked-out local `.env` file supplies development settings. It is ignored by Git and excluded from Vercel deployments. The commands below use the default SQLite database at `instance/business.db` and start Django's development server on `127.0.0.1:5000`.
 
 ### Windows (PowerShell)
 
@@ -137,7 +137,7 @@ cd C:\path\to\fieldnote
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -r requirement.txt
+python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver 127.0.0.1:5000
 ```
@@ -149,7 +149,7 @@ If PowerShell script activation is disabled, use the virtual environment's Pytho
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirement.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe manage.py migrate
 .\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:5000
 ```
@@ -163,7 +163,7 @@ cd /path/to/fieldnote
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirement.txt
+python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver 127.0.0.1:5000
 ```
@@ -174,7 +174,7 @@ Then open [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
 1. `python -m venv .venv` creates an isolated Python environment in the project directory.
 2. Activate that environment, or invoke its `python.exe` directly on Windows.
-3. `pip install -r requirement.txt` installs Django and Werkzeug.
+3. `pip install -r requirements.txt` installs the Python dependencies.
 4. `python manage.py migrate` creates or updates the database tables.
 5. `python manage.py runserver 127.0.0.1:5000` starts the local development server.
 
@@ -261,18 +261,50 @@ PostgreSQL:  postgresql://USER:PASSWORD@HOST:5432/DATABASE
 MySQL:       mysql://USER:PASSWORD@HOST:3306/DATABASE
 ```
 
-SQLite is the only backend included in the repository's default dependencies. PostgreSQL and MySQL deployments also need a compatible Django database driver installed in the environment. The URL parser is not a substitute for installing/configuring that driver.
+SQLite and PostgreSQL are supported by the repository's default dependencies. MySQL deployments need a compatible Django database driver installed in the environment. The URL parser is not a substitute for installing/configuring that driver.
+
+## Deploy to Vercel
+
+Vercel detects this Django project from `manage.py` and `WSGI_APPLICATION`. The `.python-version` file selects Python 3.13, and `STATIC_ROOT` lets Vercel collect static assets and serve them from its CDN. No Node.js build or custom Vercel routing configuration is required.
+
+The local `.env` file is only for development. It is excluded from deployments and is not a way to configure Vercel. Set production variables in the Vercel project's **Settings → Environment Variables** instead. Vercel Functions have an ephemeral filesystem, so production must use a persistent PostgreSQL database; the local SQLite database is deliberately rejected when `DJANGO_DEBUG=false`. The `.vercelignore` file prevents the local database and development files from being included in deployments. Create a PostgreSQL database with a provider supported by your Vercel project, then add these variables in the Vercel project's **Settings → Environment Variables** for every environment you deploy:
+
+Generate a signing key locally with `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` and store it as a Vercel secret.
+
+| Variable | Value |
+| --- | --- |
+| `SECRET_KEY` | A long, random, private Django signing key |
+| `DJANGO_DEBUG` | `false` |
+| `DATABASE_URL` | The provider's PostgreSQL connection URL |
+| `ALLOWED_HOSTS` | Comma-separated Vercel and custom-domain hostnames, without `https://` |
+| `PLATFORM_ADMIN_USERNAME` | Optional platform admin login name |
+| `PLATFORM_ADMIN_PASSWORD` | Optional long, unique platform admin password |
+
+Vercel's `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` are also accepted as hostnames. `CSRF_TRUSTED_ORIGINS` can optionally be set to comma-separated origins including `https://` when additional origins are needed. Do not commit credentials or database URLs.
+
+Before the first deployment, and whenever a migration is added, apply migrations to the production database from a trusted local environment with the deployment settings:
+
+```powershell
+$env:SECRET_KEY = "the-same-private-key-configured-in-vercel"
+$env:DJANGO_DEBUG = "false"
+$env:DATABASE_URL = "the-postgresql-url-from-your-database-provider"
+$env:ALLOWED_HOSTS = "your-project.vercel.app,your-custom-domain.example"
+python manage.py migrate
+```
+
+Vercel automatically runs `collectstatic` during the build because `STATIC_ROOT` is configured. The tracked local SQLite database is not a production database; back up and migrate any existing data separately before moving an existing installation.
 
 ## Configuration
 
 | Environment variable | Purpose | Default |
 | --- | --- | --- |
-| `SECRET_KEY` | Django session and CSRF signing key | Development fallback in `fieldnote/settings.py` |
-| `DATABASE_URL` | Select SQLite, PostgreSQL, or MySQL connection | SQLite at `instance/business.db` |
+| `SECRET_KEY` | Django session and CSRF signing key | Local-only development fallback; required when debug is disabled |
+| `DATABASE_URL` | Select SQLite, PostgreSQL, or MySQL connection | SQLite at `instance/business.db` in local debug mode; required in production |
 | `PLATFORM_ADMIN_USERNAME` | Platform admin login name | Empty (admin sign-in disabled) |
 | `PLATFORM_ADMIN_PASSWORD` | Platform admin password | Empty (admin sign-in disabled) |
-| `ALLOWED_HOSTS` | Comma-separated accepted host names | `*` |
-| `DJANGO_DEBUG` | Enables Django debug mode when set to `1`, `true`, or `yes` | `true` |
+| `ALLOWED_HOSTS` | Comma-separated accepted host names | `*` locally; required in production (Vercel host variables are included automatically) |
+| `CSRF_TRUSTED_ORIGINS` | Optional comma-separated trusted origins including scheme | Inferred from allowed host names |
+| `DJANGO_DEBUG` | Enables Django debug mode when set to `1`, `true`, or `yes` | `true` locally; `false` on Vercel |
 
 Example PowerShell settings for a local development session:
 
@@ -282,7 +314,7 @@ $env:DJANGO_DEBUG = "true"
 $env:ALLOWED_HOSTS = "127.0.0.1,localhost"
 ```
 
-Environment variables set this way apply only to the current PowerShell session. For non-local deployments, use your hosting provider's secret/environment-variable configuration, set a private `SECRET_KEY`, set `DJANGO_DEBUG=false`, restrict `ALLOWED_HOSTS`, use HTTPS, and run a production WSGI server. `manage.py runserver` is for development only.
+Environment variables set this way apply only to the current PowerShell session. For Vercel deployment, see [Deploy to Vercel](#deploy-to-vercel). `manage.py runserver` is for development only.
 
 ## URLs
 
@@ -335,7 +367,7 @@ The tests cover CSRF-protected registration, upgrading a legacy Werkzeug staff p
 |-- instance/                 # Local SQLite database
 |-- tests/                    # Django integration tests
 |-- manage.py                 # Django command-line entry point
-`-- requirement.txt           # Python dependencies
+`-- requirements.txt          # Python dependencies
 ```
 
 ## Current scope and known limitations
@@ -347,4 +379,4 @@ The tests cover CSRF-protected registration, upgrading a legacy Werkzeug staff p
 - Orders and invoices have totals but no line-item editor, PDF/export workflow, or payment integration.
 - Products store a stock number, but order creation does not update stock automatically.
 - Subscription/plan records do not trigger recurring billing.
-- The app uses Django's built-in development server in the local setup instructions. Production hosting requires a production server and production security configuration.
+- The app uses Django's built-in development server in the local setup instructions. Vercel runs it as a Python Function and requires production environment variables and a persistent PostgreSQL database.
