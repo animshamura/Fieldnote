@@ -311,7 +311,6 @@ def product_chat(request, slug):
             "store": False,
             "generation_config": {
                 "max_output_tokens": 250,
-                "thinking_level": "minimal",
             },
         }
     ).encode("utf-8")

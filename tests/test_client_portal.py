@@ -232,7 +232,8 @@ class ClientPortalFlowTest(TestCase):
         payload = json.loads(request.data)
         self.assertEqual(payload["model"], "test-model")
         self.assertFalse(payload["store"])
-        self.assertEqual(payload["generation_config"]["thinking_level"], "minimal")
+        self.assertEqual(payload["generation_config"]["max_output_tokens"], 250)
+        self.assertNotIn("thinking_level", payload["generation_config"])
         chat_input = json.loads(payload["input"])
         catalog = chat_input["public_product_catalog"]
         self.assertEqual([product["name"] for product in catalog], ["Blue Vase"])
