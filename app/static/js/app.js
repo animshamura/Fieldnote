@@ -480,7 +480,7 @@ function CustomerHelpChat() {
       <div className="portal-help-topics" aria-label="Suggested questions">
         ${["What products do you have?", "Which items are in stock?", "Tell me about a product"].map((prompt) => html`<button type="button" key=${prompt} disabled=${loading} onClick=${() => sendQuestion(prompt)}>${prompt}</button>`)}
       </div>
-      <p className="portal-help-disclaimer">Your message and this business's public product catalog are sent to Google Gemini. On the free tier, Google may use submitted content to improve its products. Don't share personal details, passwords, or payment information.</p>
+      <p className="portal-help-disclaimer">Your message and this business's public product details are sent to Google Gemini for product search and replies. On the free tier, Google may use submitted content to improve its products. Don't share personal details, passwords, or payment information.</p>
       ${error ? html`<p className="portal-help-error" role="alert">${error}</p>` : null}
       <form className="portal-help-form" onSubmit=${(event) => {
         event.preventDefault();

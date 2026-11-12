@@ -182,7 +182,7 @@ class ClientPortalFlowTest(TestCase):
         self.assertContains(response, "We could not find that business.")
 
     @override_settings(GEMINI_API_KEY="test-gemini-api-key", GEMINI_MODEL="test-model")
-    def test_customer_ai_chat_uses_only_the_current_tenant_public_catalog(self):
+    def test_customer_ai_chat_retrieves_only_relevant_current_tenant_products(self):
         tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
         other_tenant = Tenant.objects.create(name="Other Shop", slug="other-shop")
         Product.objects.create(
@@ -194,6 +194,14 @@ class ClientPortalFlowTest(TestCase):
             description="A handmade ceramic vase.",
         )
         Product.objects.create(
+            tenant=tenant,
+            name="Red Mug",
+            sku="MUG-1",
+            price=12,
+            stock=8,
+            description="A red ceramic mug for tea.",
+        )
+        Product.objects.create(
             tenant=other_tenant,
             name="Private Product",
             sku="PRIVATE-1",
@@ -202,6 +210,13 @@ class ClientPortalFlowTest(TestCase):
             description="A product from another tenant.",
         )
         browser = self.create_client_browser(tenant)
+        embedding_response = {
+            "embeddings": [
+                {"values": [1.0, 0.0]},
+                {"values": [0.0, 1.0]},
+                {"values": [0.9, 0.1]},
+            ],
+        }
         provider_response = {
             "steps": [
                 {
@@ -212,31 +227,53 @@ class ClientPortalFlowTest(TestCase):
         }
 
         with patch("app.routes.client_portal.urlopen") as gemini_request:
-            gemini_request.return_value.__enter__.return_value.read.return_value = (
-                json.dumps(provider_response).encode("utf-8")
-            )
-            response = browser.post(
-                f"/t/{tenant.slug}/portal/chat",
-                data=json.dumps({"message": "Tell me about the Blue Vase."}),
-                content_type="application/json",
-            )
+            with patch("app.routes.client_portal.CHAT_MAX_RETRIEVED_PRODUCTS", 1):
+                gemini_request.return_value.__enter__.return_value.read.side_effect = [
+                    json.dumps(embedding_response).encode("utf-8"),
+                    json.dumps(provider_response).encode("utf-8"),
+                ]
+                response = browser.post(
+                    f"/t/{tenant.slug}/portal/chat",
+                    data=json.dumps({"message": "Tell me about the Blue Vase."}),
+                    content_type="application/json",
+                )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"answer": "The Blue Vase costs $25.50."})
-        request = gemini_request.call_args.args[0]
+        self.assertEqual(gemini_request.call_count, 2)
+        embedding_request = gemini_request.call_args_list[0].args[0]
+        request = gemini_request.call_args_list[1].args[0]
+        self.assertEqual(
+            embedding_request.full_url,
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            "gemini-embedding-001:batchEmbedContents",
+        )
         self.assertEqual(
             request.full_url,
             "https://generativelanguage.googleapis.com/v1beta/interactions",
         )
+        self.assertEqual(
+            embedding_request.get_header("X-goog-api-key"),
+            "test-gemini-api-key",
+        )
         self.assertEqual(request.get_header("X-goog-api-key"), "test-gemini-api-key")
+        embedding_payload = json.loads(embedding_request.data)
+        self.assertEqual(len(embedding_payload["requests"]), 3)
+        self.assertEqual(
+            [item["taskType"] for item in embedding_payload["requests"]],
+            ["RETRIEVAL_DOCUMENT", "RETRIEVAL_DOCUMENT", "QUESTION_ANSWERING"],
+        )
+        self.assertNotIn("Private Product", embedding_request.data.decode("utf-8"))
         payload = json.loads(request.data)
         self.assertEqual(payload["model"], "test-model")
         self.assertFalse(payload["store"])
         self.assertEqual(payload["generation_config"]["max_output_tokens"], 250)
         self.assertNotIn("thinking_level", payload["generation_config"])
         chat_input = json.loads(payload["input"])
-        catalog = chat_input["public_product_catalog"]
-        self.assertEqual([product["name"] for product in catalog], ["Blue Vase"])
+        self.assertEqual(
+            [product["name"] for product in chat_input["retrieved_public_products"]],
+            ["Blue Vase"],
+        )
         self.assertNotIn("Private Product", request.data.decode("utf-8"))
         self.assertNotIn("customer@example.test", request.data.decode("utf-8"))
 
