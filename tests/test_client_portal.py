@@ -1,10 +1,12 @@
 import json
 import re
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlparse
+from unittest.mock import patch
 
 from django.test import Client, TestCase, override_settings
+from app.routes.client_portal import verified_google_identity
 
 from app.models.client_account import ClientAccount
 from app.models.customer import Customer
@@ -140,6 +142,128 @@ class ClientPortalFlowTest(TestCase):
         )
         self.assertIn(b"OWN-100", response.content)
         self.assertNotIn(b"PRIVATE-999", response.content)
+
+    def test_public_storefront_signup_and_checkout_decrements_stock(self):
+        tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
+        product = Product.objects.create(
+            tenant=tenant,
+            name="Field Bag",
+            sku="BAG-1",
+            price=24.5,
+            stock=3,
+            description="A useful everyday bag.",
+        )
+        response = self.staff.get(f"/t/{tenant.slug}/store/")
+        store_props = self.bootstrap(response)
+        self.assertEqual(store_props["page"], "store")
+        self.assertEqual(store_props["props"]["products"][0]["name"], "Field Bag")
+
+        customer_browser = Client()
+        response = customer_browser.post(
+            f"/t/{tenant.slug}/portal/signup",
+            data={
+                "name": "Morgan Customer",
+                "email": "morgan@example.test",
+                "password": "customer-password",
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'"page": "store"', response.content)
+
+        response = customer_browser.post(
+            f"/t/{tenant.slug}/portal/checkout",
+            data={"cart": json.dumps([{"id": product.id, "quantity": 2}])},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'"page": "client_portal"', response.content)
+        order = Order.objects.get(tenant=tenant)
+        self.assertEqual(order.customer.email, "morgan@example.test")
+        self.assertEqual(order.status, "Pending")
+        self.assertEqual(order.total_amount, 49.0)
+        self.assertEqual(order.items.get().quantity, 2)
+        product.refresh_from_db()
+        self.assertEqual(product.stock, 1)
+
+    def test_storefront_checkout_cannot_order_another_workspaces_product(self):
+        tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
+        other_tenant = Tenant.objects.create(name="Other Shop", slug="other-shop")
+        customer = Customer.objects.create(
+            tenant=tenant, name="Morgan Customer", email="morgan@example.test"
+        )
+        product = Product.objects.create(
+            tenant=other_tenant, name="Private item", sku="PRIVATE", price=10, stock=5
+        )
+        account = ClientAccount.objects.create(
+            tenant=tenant,
+            customer=customer,
+            email=customer.email,
+            password_hash="test-hash",
+        )
+        customer_browser = Client()
+        session = customer_browser.session
+        session["client_account_id"] = account.id
+        session.save()
+
+        response = customer_browser.post(
+            f"/t/{tenant.slug}/portal/checkout",
+            data={"cart": json.dumps([{"id": product.id, "quantity": 1}])},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.filter(tenant=tenant).exists())
+        product.refresh_from_db()
+        self.assertEqual(product.stock, 5)
+        self.assertContains(response, "no longer available")
+
+    @override_settings(GOOGLE_CLIENT_ID="test-google-client")
+    def test_google_sign_in_creates_a_customer_account(self):
+        tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
+        customer_browser = Client()
+        signup_response = customer_browser.get(f"/t/{tenant.slug}/portal/signup")
+        nonce = self.bootstrap(signup_response)["props"]["google_nonce"]
+        with patch(
+            "app.routes.client_portal.verified_google_identity",
+            return_value={
+                "email": "google@example.test",
+                "name": "Google Customer",
+                "nonce": nonce,
+            },
+        ):
+            response = customer_browser.post(
+                f"/t/{tenant.slug}/portal/google",
+                data={"credential": "verified-test-credential"},
+            )
+
+        self.assertRedirects(
+            response, f"/t/{tenant.slug}/store/", fetch_redirect_response=False
+        )
+        account = ClientAccount.objects.get(tenant=tenant, email="google@example.test")
+        self.assertEqual(account.customer.name, "Google Customer")
+        self.assertEqual(customer_browser.session.get("client_account_id"), account.id)
+
+    @override_settings(GOOGLE_CLIENT_ID="test-google-client")
+    def test_google_identity_verification_checks_audience_and_verified_email(self):
+        claims = {
+            "aud": "test-google-client",
+            "iss": "https://accounts.google.com",
+            "email_verified": True,
+            "exp": int((datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()),
+            "email": "google@example.test",
+        }
+        with patch("app.routes.client_portal.urlopen") as token_info:
+            response = token_info.return_value.__enter__.return_value
+            response.read.return_value = json.dumps(claims).encode("utf-8")
+            self.assertEqual(
+                verified_google_identity("verified-token")["email"],
+                "google@example.test",
+            )
+            claims["aud"] = "untrusted-client"
+            response.read.return_value = json.dumps(claims).encode("utf-8")
+            with self.assertRaises(ValueError):
+                verified_google_identity("wrong-audience-token")
 
     def test_platform_admin_requires_confirmation_and_deletes_workspace_data(self):
         tenant = self.create_workspace("Delete Me")

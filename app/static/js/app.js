@@ -1,4 +1,4 @@
-import React, { useState } from "https://esm.sh/react@18.3.1";
+import React, { useEffect, useState } from "https://esm.sh/react@18.3.1";
 import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
 import htm from "https://esm.sh/htm@3.1.1";
 
@@ -22,8 +22,8 @@ const csrf = () => html`<input type="hidden" name="csrfmiddlewaretoken" value=${
 const flashesView = () => flashes?.length
   ? html`<div className="flash-stack">${flashes.map(([category, message], i) => html`<div key=${i} className=${`flash ${category}`}>${message}</div>`)}</div>`
   : null;
-const Brand = ({ href = "/" }) => html`
-  <a className="brand" href=${href} aria-label="Fieldnote home">
+const Brand = ({ href = "/", className = "" }) => html`
+  <a className=${`brand ${className}`} href=${href} aria-label="Fieldnote home">
     <span className="brand-mark" aria-hidden="true">
       <svg viewBox="0 0 32 32" focusable="false">
         <path className="brand-page" d="M9 5.75h9l5.5 5.5v13A2.75 2.75 0 0 1 20.75 27h-11A2.75 2.75 0 0 1 7 24.25v-15A3.5 3.5 0 0 1 9 5.75Z" />
@@ -71,23 +71,32 @@ function AuthLanding() {
 
 function LoginPage({ portal = false }) {
   const tenant = props.tenant;
+  const shopUrl = `/t/${tenant.slug}/store/`;
   return html`
-    <${Brand} href="/" />
-    <main className="login-card">
+    <header className="login-header">
+      <${Brand} className="login-brand" href=${portal ? shopUrl : "/"} />
+      ${portal
+        ? html`<a className="login-header-link" href=${shopUrl}>Browse products <span>↗</span></a>`
+        : html`<span className="login-header-note">TEAM WORKSPACE</span>`}
+    </header>
+    <main className=${`login-card ${portal ? "customer-login-card" : "workspace-login-card"}`}>
       <div className="login-emblem">${tenant.name.slice(0, 1).toUpperCase()}</div><span className="kicker">${tenant.name}${portal ? " CUSTOMER PORTAL" : ""}</span><h1>Welcome back.</h1>
-      <p>${portal ? "Sign in to view your orders, invoices, and support requests." : "Sign in to your company workspace."}</p>
+      <p>${portal ? "Sign in to view your orders, invoices, and support requests." : "Sign in to your workspace to continue to your team dashboard."}</p>
+      ${portal ? null : html`<div className="login-workspace-context"><span className="workspace-context-dot"></span><span>Signing in to</span><strong>${tenant.name}</strong></div>`}
       ${flashesView()}
       <form className="form-stack" method="post">
         ${csrf()}
         ${portal
           ? html`<label>Email address<input type="email" name="email" autoComplete="username" required autoFocus /></label>`
-          : html`<label>Username<input name="username" autoComplete="username" placeholder="Your username" required autoFocus /></label>`}
-        <label>Password<input type="password" name="password" autoComplete="current-password" required /></label>
-        <button className="button button-primary button-wide" type="submit">Sign in <span>↗</span></button>
+          : html`<label>Username<input name="username" autoComplete="username" placeholder="Enter your team username" required autoFocus /></label>`}
+        <label>Password<input type="password" name="password" autoComplete="current-password" placeholder=${portal ? "" : "Enter your password"} required /></label>
+        <button className="button button-primary button-wide" type="submit">${portal ? "Sign in" : "Sign in to workspace"} <span>↗</span></button>
       </form>
-      ${portal ? null : html`<a className="back-link" href="/">← Create a new workspace</a>`}
+      ${portal
+        ? html`<div className="auth-alternatives"><p>New here? <a href=${`/t/${tenant.slug}/portal/signup`}>Create an account</a></p><a className="text-link" href=${`/t/${tenant.slug}/store/`}>Browse the store ↗</a><${GoogleSignIn} tenant=${tenant} /></div>`
+        : html`<div className="login-card-footer"><span>Need a different workspace?</span><a href="/">Create a workspace ↗</a></div>`}
     </main>
-    <div className="login-caption">${portal ? "FIELDNOTE CUSTOMER PORTAL" : "A LITTLE MORE CLARITY, EVERY DAY."}</div>`;
+    <div className="login-caption">${portal ? "FIELDNOTE CUSTOMER PORTAL" : "PRIVATE ACCESS FOR YOUR TEAM"}</div>`;
 }
 
 const staffNav = [
@@ -111,6 +120,7 @@ function StaffShell({ children, active = "" }) {
           ${staffNav.slice(0, 6).map(([key, label, icon]) => html`<a key=${key} className=${`nav-link ${active === key ? "active" : ""}`} href=${`/t/${tenant.slug}/${key}`}><span className="nav-icon">${icon}</span>${label}</a>`)}
           <span className="nav-caption">ORGANIZATION</span>
           ${staffNav.slice(6).map(([key, label, icon]) => html`<a key=${key} className=${`nav-link ${active === key ? "active" : ""}`} href=${`/t/${tenant.slug}/${key}`}><span className="nav-icon">${icon}</span>${label}</a>`)}
+          <a className="nav-link" href=${`/t/${tenant.slug}/store/`} target="_blank" rel="noopener"><span className="nav-icon">↗</span>Customer shop</a>
         </nav>
         <div className="sidebar-bottom">
           <div className="profile"><div className="avatar">${user.username.slice(0, 1).toUpperCase()}</div><div className="profile-copy"><strong>${user.username}</strong><span>${user.role.slice(0, 1).toUpperCase()}${user.role.slice(1)}</span></div></div>
@@ -218,7 +228,7 @@ function InviteCreated() {
       <div className="copy-row"><input type="text" value=${invite_url} readOnly aria-label="Customer invitation link" /><button className="button button-primary" type="button" onClick=${copyLink}>${copied ? "Copied" : "Copy link"}</button></div>
       ${copyError ? html`<p role="alert">${copyError}</p>` : null}
       <div className="invite-meta"><span>EXPIRES</span><strong>${dateLabel(expires_at, { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC</strong></div>
-      <div className="invite-actions"><a className="text-link" href=${`/t/${tenant.slug}/portal/login`}>Customer sign-in page ↗</a><a className="cancel-link" href=${`/t/${tenant.slug}/customers`}>Back to customers</a></div>
+      <div className="invite-actions"><a className="text-link" href=${`/t/${tenant.slug}/store/`}>Open customer shop ↗</a><a className="text-link" href=${`/t/${tenant.slug}/portal/login`}>Customer sign-in ↗</a><a className="cancel-link" href=${`/t/${tenant.slug}/customers`}>Back to customers</a></div>
     </section>
   </${StaffShell}>`;
 }
@@ -234,11 +244,142 @@ function InviteInvalid() {
   return html`<main className="login-card"><div className="login-emblem">!</div><span className="kicker">${props.tenant.name}</span><h1>This invite isn’t available.</h1><p>It may have expired, already been used, or been replaced by a newer invitation. Ask your contact for a fresh invite link.</p><a className="button button-primary button-wide" href=${`/t/${props.tenant.slug}/portal/login`}>Go to customer sign in <span>↗</span></a></main><div className="login-caption">FIELDNOTE CUSTOMER PORTAL</div>`;
 }
 
+function GoogleSignIn({ tenant }) {
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!props.google_client_id) return undefined;
+    const renderGoogleButton = () => {
+      if (!window.google?.accounts?.id) {
+        setError("Google sign-in could not load. Check your internet connection and try again.");
+        return;
+      }
+      window.google.accounts.id.initialize({
+        client_id: props.google_client_id,
+        nonce: props.google_nonce,
+        callback: ({ credential }) => {
+          if (!credential) {
+            setError("Google sign-in did not return a credential. Please try again.");
+            return;
+          }
+          const form = document.createElement("form");
+          form.method = "post";
+          form.action = `/t/${tenant.slug}/portal/google`;
+          for (const [name, value] of [
+            ["csrfmiddlewaretoken", csrfToken],
+            ["credential", credential],
+          ]) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            form.append(input);
+          }
+          document.body.append(form);
+          form.submit();
+        },
+      });
+      const target = document.getElementById("google-signin-button");
+      if (target) {
+        window.google.accounts.id.renderButton(target, {
+          theme: "outline",
+          size: "large",
+          shape: "rectangular",
+          width: Math.min(350, target.clientWidth || 350),
+          text: "continue_with",
+        });
+      }
+    };
+    const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (window.google?.accounts?.id) {
+      renderGoogleButton();
+    } else if (existing) {
+      existing.addEventListener("load", renderGoogleButton, { once: true });
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = renderGoogleButton;
+      script.onerror = () => setError("Google sign-in could not load. Check your internet connection and try again.");
+      document.head.append(script);
+    }
+    return undefined;
+  }, [tenant.slug]);
+  if (!props.google_client_id) {
+    return html`<p className="google-setup-note">Google sign-in is unavailable until this site configures it.</p>`;
+  }
+  return html`<div className="google-auth"><div className="auth-divider"><span>OR</span></div><div id="google-signin-button"></div>${error ? html`<p role="alert" className="google-error">${error}</p>` : null}</div>`;
+}
+
+function ClientSignup() {
+  const { tenant } = props;
+  return html`<${Brand} href=${`/t/${tenant.slug}/store/`} />
+    <main className="login-card"><div className="login-emblem">${tenant.name.slice(0, 1).toUpperCase()}</div><span className="kicker">${tenant.name} CUSTOMER ACCOUNT</span><h1>Create your account.</h1><p>Sign up to shop and keep track of your orders.</p>${flashesView()}
+      <form className="form-stack" method="post">${csrf()}<label>Your name<input name="name" autoComplete="name" maxLength="150" required autoFocus /></label><label>Email address<input type="email" name="email" autoComplete="email" maxLength="160" required /></label><label>Password <span className="field-hint">8 characters minimum</span><input type="password" name="password" autoComplete="new-password" minLength="8" maxLength="128" required /></label><button className="button button-primary button-wide" type="submit">Create account <span>↗</span></button></form>
+      <div className="auth-alternatives"><p>Already have an account? <a href=${`/t/${tenant.slug}/portal/login`}>Sign in</a></p><${GoogleSignIn} tenant=${tenant} /></div>
+    </main><div className="login-caption">FIELDNOTE CUSTOMER ACCOUNT</div>`;
+}
+
+function readStoredCart(key) {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(key) || "{}");
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return { cart: parsed, error: "" };
+    }
+    return { cart: {}, error: "The saved cart was invalid and has been cleared." };
+  } catch (error) {
+    return { cart: {}, error: `Could not restore the saved cart: ${error.message}` };
+  }
+}
+
+function Storefront() {
+  const { tenant, products, account } = props;
+  const storageKey = `fieldnote-cart-${tenant.slug}`;
+  const [savedCart] = useState(() => readStoredCart(storageKey));
+  const [cart, setCart] = useState(savedCart.cart);
+  const [cartError, setCartError] = useState(savedCart.error);
+  const cartItems = products.filter((product) => Number(cart[product.id]) > 0);
+  const total = cartItems.reduce((sum, product) => sum + product.price * Number(cart[product.id]), 0);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(cart));
+      setCartError("");
+    } catch (error) {
+      setCartError(`Could not save your cart: ${error.message}`);
+    }
+  }, [cart, storageKey]);
+  const setQuantity = (product, quantity) => {
+    setCart((current) => {
+      const next = { ...current };
+      if (quantity > 0) next[product.id] = quantity;
+      else delete next[product.id];
+      return next;
+    });
+  };
+  return html`<div className="client-shell storefront-shell">
+    <header className="client-topbar"><${Brand} href=${`/t/${tenant.slug}/store/`} /><div className="client-top-right"><span>${tenant.name} shop</span>${account ? html`<a className="client-signout" href=${`/t/${tenant.slug}/portal/`}>My account ↗</a>` : html`<a className="client-signout" href=${`/t/${tenant.slug}/portal/login`}>Sign in ↗</a>`}</div></header>
+    <main className="client-content">
+      <section className="storefront-hero"><span className="kicker">THE ${tenant.name.toUpperCase()} SHOP</span><h1>Good things, ready for you.</h1><p>Browse the collection and place your order online. Payment is arranged with the business after checkout.</p></section>
+      ${flashesView()}
+      ${cartError ? html`<div className="flash error" role="alert">${cartError}</div>` : null}
+      <div className="store-layout"><section className="store-products"><div className="store-section-heading"><div><span className="kicker">THE COLLECTION</span><h2>Shop products</h2></div><span>${products.length} item${products.length === 1 ? "" : "s"}</span></div>
+        ${products.length ? html`<div className="product-grid">${products.map((product) => html`<article className="panel product-card" key=${product.id}><div className="product-art" aria-hidden="true"><span>✳</span><i>${String(product.name).slice(0, 1).toUpperCase()}</i></div><div className="product-info"><div><h3>${product.name}</h3><span className="product-stock">${product.stock > 0 ? `${product.stock} in stock` : "Sold out"}</span></div><strong className="product-price">${currency(product.price)}</strong></div>${product.description ? html`<p>${product.description}</p>` : null}<button className="button button-primary button-wide" type="button" disabled=${product.stock <= 0 || Number(cart[product.id] || 0) >= product.stock} onClick=${() => setQuantity(product, Number(cart[product.id] || 0) + 1)}>${product.stock <= 0 ? "Sold out" : Number(cart[product.id] || 0) >= product.stock ? "Maximum in cart" : Number(cart[product.id] || 0) ? "Add one more" : "Add to cart"} <span>＋</span></button></article>`)}</div>` : html`<div className="panel store-empty"><span>◇</span><h2>Nothing on the shelves just yet.</h2><p>Check back soon for new products.</p></div>`}
+      </section>
+      <aside className="panel store-cart"><div className="panel-heading"><div><span className="kicker">YOUR SELECTION</span><h2>Your cart</h2></div><span className="cart-count">${cartItems.reduce((sum, product) => sum + Number(cart[product.id]), 0)}</span></div>
+        ${cartItems.length ? html`<div className="cart-lines">${cartItems.map((product) => html`<div className="cart-line" key=${product.id}><div><strong>${product.name}</strong><span>${currency(product.price)} each</span></div><div className="cart-quantity"><button type="button" aria-label=${`Remove one ${product.name}`} onClick=${() => setQuantity(product, Number(cart[product.id]) - 1)}>−</button><span>${cart[product.id]}</span><button type="button" aria-label=${`Add one ${product.name}`} disabled=${Number(cart[product.id]) >= product.stock} onClick=${() => setQuantity(product, Number(cart[product.id]) + 1)}>＋</button></div><strong className="cart-line-total">${currency(product.price * Number(cart[product.id]))}</strong></div>`)}</div>` : html`<div className="cart-empty"><span>◇</span><p>Your cart is waiting for something good.</p></div>`}
+        <div className="cart-total"><span>Order total</span><strong>${currency(total)}</strong></div>
+        ${cartItems.length ? account ? html`<form className="checkout-form" method="post" action=${`/t/${tenant.slug}/portal/checkout`}>${csrf()}<input type="hidden" name="cart" value=${JSON.stringify(cartItems.map((product) => ({ id: product.id, quantity: Number(cart[product.id]) })))} /><button className="button button-primary button-wide" type="submit">Place order <span>↗</span></button><p>No payment is collected online. The business will follow up about payment.</p></form>` : html`<div className="checkout-form"><a className="button button-primary button-wide" href=${`/t/${tenant.slug}/portal/login`}>Sign in to checkout <span>↗</span></a><p>New customer? <a href=${`/t/${tenant.slug}/portal/signup`}>Create an account</a> to place your order.</p></div>` : null}
+      </aside></div>
+      <footer className="client-footer"><span>${tenant.name}</span><a href=${`/t/${tenant.slug}/portal/login`}>Customer account ↗</a></footer>
+    </main>
+  </div>`;
+}
+
 function ClientPortal() {
   const { tenant, account, customer, orders, invoices, tickets } = props;
   const firstName = customer.name.split(" ")[0];
   return html`<div className="client-shell">
-    <header className="client-topbar"><${Brand} href=${`/t/${tenant.slug}/portal/`} /><div className="client-top-right"><span>${tenant.name} portal</span><form method="post" action=${`/t/${tenant.slug}/portal/logout`}>${csrf()}<button className="client-signout" type="submit">Sign out <span>↗</span></button></form></div></header>
+    <header className="client-topbar"><${Brand} href=${`/t/${tenant.slug}/store/`} /><div className="client-top-right"><span>${tenant.name} portal</span><a className="client-signout" href=${`/t/${tenant.slug}/store/`}>Shop ↗</a><form method="post" action=${`/t/${tenant.slug}/portal/logout`}>${csrf()}<button className="client-signout" type="submit">Sign out <span>↗</span></button></form></div></header>
     <main className="client-content">
       <section className="client-welcome"><div><span className="kicker">YOUR CUSTOMER PORTAL</span><h1>Welcome, ${firstName}.</h1><p>Your orders, invoices, and support updates in one place.</p></div><div className="client-profile"><span className="client-avatar">${customer.name.slice(0, 1).toUpperCase()}</span><div><strong>${customer.name}</strong><span>${account.email}</span></div></div></section>
       <section className="client-stats"><div><span>ORDERS</span><strong>${orders.length}</strong></div><div><span>INVOICES</span><strong>${invoices.length}</strong></div><div><span>SUPPORT REQUESTS</span><strong>${tickets.length}</strong></div></section>
@@ -297,6 +438,8 @@ const pages = {
   invite_accept: InviteAccept,
   invite_invalid: InviteInvalid,
   client_login: () => html`<${LoginPage} portal=${true} />`,
+  client_signup: ClientSignup,
+  store: Storefront,
   client_portal: ClientPortal,
   platform_login: PlatformLogin,
   platform_dashboard: PlatformDashboard,

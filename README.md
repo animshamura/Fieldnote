@@ -1,6 +1,6 @@
 # Fieldnote
 
-Fieldnote is a multi-tenant business workspace for keeping customer and operational records together. Each company gets its own workspace to manage customers, products, orders, invoices, support tickets, subscriptions, employees, and departments. Customers can get a separate, private portal for viewing their own orders, invoices, and support requests.
+Fieldnote is a multi-tenant business workspace for keeping customer and operational records together. Each company gets its own workspace to manage customers, products, orders, invoices, support tickets, subscriptions, employees, and departments. Each workspace also has a public product storefront where customers can create accounts, place orders, and view their own orders, invoices, and support requests.
 
 The interface is a React app served by Django. The current frontend loads React, React DOM, and HTM as pinned ES modules from `esm.sh`; it does not need a Node.js build step. A browser needs internet access to load those modules and the Google Fonts used by the interface.
 
@@ -77,23 +77,26 @@ Staff can create, edit, and delete records from the workspace navigation. Record
 | **Team** | Employee name, email, phone, position, department, and salary | Name and salary are required. Department is optional. |
 | **Departments** | Department name and description | Department name is required. |
 
-Orders and invoices are currently single records with a total; the interface does not provide line-item editing, invoice PDF generation, or payment collection. Products have a stock field, but Fieldnote does not automatically deduct inventory when an order is added. Subscription entries are records only; there is no recurring billing integration.
+Orders created by staff are single records with a total. Customer storefront orders include product line items and automatically deduct stock when placed. Storefront checkout places a pending order; payment is arranged directly with the business and is not collected online. The interface does not provide staff line-item editing, invoice PDF generation, or payment processing. Subscription entries are records only; there is no recurring billing integration.
 
 When a record is linked to other records, the app may prevent deleting it to avoid leaving broken references. Changes made through the staff record forms are added to the workspace activity feed.
 
 ### Customer portal
 
-The customer portal is an optional, separate sign-in for customers:
+Each workspace storefront is public at `/t/<workspace-slug>/store/`. Customers can browse products and available stock without signing in. To place an order, they create a customer account at `/t/<workspace-slug>/portal/signup` or sign in at `/t/<workspace-slug>/portal/login`.
 
-1. Add a customer and an email address under **Customers**.
-2. Select **Invite** for that customer.
-3. Copy the generated invitation URL and send it to the customer through your usual secure channel.
-4. The customer opens the one-time link and creates a password of at least eight characters.
-5. After setup, the customer signs in at `/t/<workspace-slug>/portal/login`.
+Customer accounts can be created with an email and password or by using Google sign-in. Google sign-in requires setting `GOOGLE_CLIENT_ID` in the server environment and configuring the matching authorized JavaScript origin in Google Cloud. Only the client ID is needed; do not put a Google client secret in the app. If Google is not configured, customers can still sign up with an email and password.
 
-Invitation links expire after 72 hours, can only be used once, and are stored as token hashes. A new invite replaces an unused invite for the same customer. Fieldnote does **not** send invitation email automatically.
+For example, set the client ID before starting the local server in PowerShell:
 
-After signing in, a customer can view their own orders, invoices, and support requests. The portal does not currently let customers create support tickets, edit records, or make payments. The server filters portal records by both workspace and customer account.
+```powershell
+$env:GOOGLE_CLIENT_ID = "your-google-oauth-client-id"
+python manage.py runserver 127.0.0.1:5000
+```
+
+Staff can still create an invitation from **Customers** for an existing customer record. Invitation links expire after 72 hours, can only be used once, and are stored as token hashes. A new invite replaces an unused invite for the same customer. Fieldnote does **not** send invitation email automatically.
+
+After signing in, a customer can place orders from the storefront and view their own orders, invoices, and support requests. Checkout validates product availability and prices on the server, records the itemized order, and deducts stock. Payment is handled separately with the business; this is not an online payment integration. The server filters portal records by both workspace and customer account.
 
 ### Platform administration
 
@@ -112,6 +115,7 @@ Deleting a workspace is destructive. The admin must enter both the exact workspa
 - Django handles routing, forms, sessions, CSRF checks, validation, and database access.
 - Staff and customer records are scoped to a workspace; customer portal queries are additionally scoped to the signed-in customer.
 - New passwords are stored using Django's password hashing. Existing Werkzeug password hashes are checked at sign-in and upgraded to Django hashes after a successful login.
+- Google sign-in credentials are verified against Google's token-info endpoint, including the configured client ID, token expiry, verified email, and a one-time session nonce.
 - Invitation tokens are stored as SHA-256 digests, not as the original token.
 - Registration, record edits, portal sign-in, and admin actions use server-side Django views; the browser frontend does not replace server-side authorization or validation.
 
