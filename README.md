@@ -100,7 +100,7 @@ After signing in, a customer can place orders from the storefront and view their
 
 New workspace registrations stay pending until a platform admin approves them. Staff sign-in, customer sign-in, and the storefront remain unavailable until approval. Existing workspaces remain approved. Configure `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` in the server environment so an admin can review and approve workspaces at `/platform-admin/`.
 
-The signed-in customer portal includes an AI product assistant powered by Meta Model API. It answers using only that tenant's public product catalog; customer accounts, orders, invoices, and support records are not sent to the AI service. Customer messages and public product details are sent to Meta to generate answers, so customers are told not to enter passwords or payment details. Set `MODEL_API_KEY` in the server environment (or Vercel project environment variables) to enable it. `MODEL_API_MODEL` is optional and defaults to `muse-spark-1.3`. Without an API key, the assistant returns an explicit unavailable message.
+The signed-in customer portal includes a prototype AI product assistant powered by Google's Gemini API. It answers using only that tenant's public product catalog; customer accounts, orders, invoices, and support records are not sent to the AI service. Customer messages and public product details are sent to Google to generate answers. The free tier may use submitted content to improve Google's products; the API request disables interaction storage. Customers are told not to enter personal details, passwords, or payment information. Set `GEMINI_API_KEY` in the server environment (or Vercel project environment variables) to enable it. `GEMINI_MODEL` is optional and defaults to `gemini-4-hydrogen`. Without an API key, the assistant returns an explicit unavailable message. Free-tier usage is subject to Google's quotas, model availability, and terms.
 
 Customers can open `/customer-login` on the deployed site, enter their business name or workspace slug, and continue to that business's customer sign-in page. Tenants can also share the direct customer sign-in URL `/t/<workspace-slug>/portal/login`.
 
@@ -289,8 +289,8 @@ Generate a signing key locally with `python -c "from django.core.management.util
 | `ALLOWED_HOSTS` | Comma-separated Vercel and custom-domain hostnames, without `https://` |
 | `PLATFORM_ADMIN_USERNAME` | Platform admin login name; required to approve new workspaces |
 | `PLATFORM_ADMIN_PASSWORD` | Long, unique platform admin password; required to approve new workspaces |
-| `MODEL_API_KEY` | Optional Meta Model API key for the customer product assistant |
-| `MODEL_API_MODEL` | Optional Meta model; defaults to `muse-spark-1.3` |
+| `GEMINI_API_KEY` | Optional Google Gemini API key for the customer product assistant |
+| `GEMINI_MODEL` | Optional Gemini model; defaults to `gemini-4-hydrogen` |
 
 Vercel's `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` are also accepted as hostnames. `CSRF_TRUSTED_ORIGINS` can optionally be set to comma-separated origins including `https://` when additional origins are needed. Do not commit credentials or database URLs.
 
@@ -314,8 +314,8 @@ Vercel automatically runs `collectstatic` during the build because `STATIC_ROOT`
 | `DATABASE_URL` | Select SQLite, PostgreSQL, or MySQL connection | SQLite at `instance/business.db` in local debug mode; required in production |
 | `PLATFORM_ADMIN_USERNAME` | Platform admin login name | Empty (approval admin disabled) |
 | `PLATFORM_ADMIN_PASSWORD` | Platform admin password | Empty (approval admin disabled) |
-| `MODEL_API_KEY` | Meta Model API key for product-assistant replies | Empty (AI assistant disabled) |
-| `MODEL_API_MODEL` | Meta Model API model name | `muse-spark-1.3` |
+| `GEMINI_API_KEY` | Google Gemini API key for product-assistant replies | Empty (AI assistant disabled) |
+| `GEMINI_MODEL` | Gemini API model name | `gemini-4-hydrogen` |
 | `ALLOWED_HOSTS` | Comma-separated accepted host names | `*` locally; required in production (Vercel host variables are included automatically) |
 | `CSRF_TRUSTED_ORIGINS` | Optional comma-separated trusted origins including scheme | Inferred from allowed host names |
 | `DJANGO_DEBUG` | Enables Django debug mode when set to `1`, `true`, or `yes` | `true` locally; `false` on Vercel |

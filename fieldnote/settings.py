@@ -146,5 +146,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 PLATFORM_ADMIN_USERNAME = os.environ.get("PLATFORM_ADMIN_USERNAME", "")
 PLATFORM_ADMIN_PASSWORD = os.environ.get("PLATFORM_ADMIN_PASSWORD", "")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
-MODEL_API_KEY = os.environ.get("MODEL_API_KEY", "")
-MODEL_API_MODEL = os.environ.get("MODEL_API_MODEL", "muse-spark-1.3")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-4-hydrogen")

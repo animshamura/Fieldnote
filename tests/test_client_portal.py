@@ -181,7 +181,7 @@ class ClientPortalFlowTest(TestCase):
         )
         self.assertContains(response, "We could not find that business.")
 
-    @override_settings(MODEL_API_KEY="test-model-api-key", MODEL_API_MODEL="test-model")
+    @override_settings(GEMINI_API_KEY="test-gemini-api-key", GEMINI_MODEL="test-model")
     def test_customer_ai_chat_uses_only_the_current_tenant_public_catalog(self):
         tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
         other_tenant = Tenant.objects.create(name="Other Shop", slug="other-shop")
@@ -203,11 +203,16 @@ class ClientPortalFlowTest(TestCase):
         )
         browser = self.create_client_browser(tenant)
         provider_response = {
-            "choices": [{"message": {"content": "The Blue Vase costs $25.50."}}],
+            "steps": [
+                {
+                    "type": "model_output",
+                    "content": [{"type": "text", "text": "The Blue Vase costs $25.50."}],
+                },
+            ],
         }
 
-        with patch("app.routes.client_portal.urlopen") as meta_request:
-            meta_request.return_value.__enter__.return_value.read.return_value = (
+        with patch("app.routes.client_portal.urlopen") as gemini_request:
+            gemini_request.return_value.__enter__.return_value.read.return_value = (
                 json.dumps(provider_response).encode("utf-8")
             )
             response = browser.post(
@@ -218,22 +223,28 @@ class ClientPortalFlowTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"answer": "The Blue Vase costs $25.50."})
-        request = meta_request.call_args.args[0]
-        self.assertEqual(request.full_url, "https://api.meta.ai/v1/chat/completions")
-        self.assertEqual(request.get_header("Authorization"), "Bearer test-model-api-key")
+        request = gemini_request.call_args.args[0]
+        self.assertEqual(
+            request.full_url,
+            "https://generativelanguage.googleapis.com/v1beta/interactions",
+        )
+        self.assertEqual(request.get_header("X-goog-api-key"), "test-gemini-api-key")
         payload = json.loads(request.data)
         self.assertEqual(payload["model"], "test-model")
-        self.assertEqual(payload["reasoning_effort"], "minimal")
-        catalog = json.loads(payload["messages"][-1]["content"])["public_product_catalog"]
+        self.assertFalse(payload["store"])
+        self.assertEqual(payload["generation_config"]["thinking_level"], "minimal")
+        chat_input = json.loads(payload["input"])
+        catalog = chat_input["public_product_catalog"]
         self.assertEqual([product["name"] for product in catalog], ["Blue Vase"])
+        self.assertNotIn("Private Product", request.data.decode("utf-8"))
         self.assertNotIn("customer@example.test", request.data.decode("utf-8"))
 
-    @override_settings(MODEL_API_KEY="")
-    def test_customer_ai_chat_reports_missing_api_key_without_calling_openai(self):
+    @override_settings(GEMINI_API_KEY="")
+    def test_customer_ai_chat_reports_missing_api_key_without_calling_provider(self):
         tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
         browser = self.create_client_browser(tenant)
 
-        with patch("app.routes.client_portal.urlopen") as meta_request:
+        with patch("app.routes.client_portal.urlopen") as gemini_request:
             response = browser.post(
                 f"/t/{tenant.slug}/portal/chat",
                 data=json.dumps({"message": "What products are available?"}),
@@ -242,14 +253,14 @@ class ClientPortalFlowTest(TestCase):
 
         self.assertEqual(response.status_code, 503)
         self.assertIn("not configured", response.json()["error"])
-        meta_request.assert_not_called()
+        gemini_request.assert_not_called()
 
-    @override_settings(MODEL_API_KEY="test-model-api-key")
-    def test_customer_ai_chat_rejects_oversized_question_without_calling_openai(self):
+    @override_settings(GEMINI_API_KEY="test-gemini-api-key")
+    def test_customer_ai_chat_rejects_oversized_question_without_calling_provider(self):
         tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
         browser = self.create_client_browser(tenant)
 
-        with patch("app.routes.client_portal.urlopen") as meta_request:
+        with patch("app.routes.client_portal.urlopen") as gemini_request:
             response = browser.post(
                 f"/t/{tenant.slug}/portal/chat",
                 data=json.dumps({"message": "x" * 501}),
@@ -258,7 +269,7 @@ class ClientPortalFlowTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("500 characters", response.json()["error"])
-        meta_request.assert_not_called()
+        gemini_request.assert_not_called()
 
     def test_existing_werkzeug_staff_password_is_upgraded_on_login(self):
         tenant = Tenant.objects.create(name="Legacy Workspace", slug="legacy-workspace")
