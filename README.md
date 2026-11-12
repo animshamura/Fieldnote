@@ -98,13 +98,15 @@ Staff can still create an invitation from **Customers** for an existing customer
 
 After signing in, a customer can place orders from the storefront and view their own orders, invoices, and support requests. Checkout validates product availability and prices on the server, records the itemized order, and deducts stock. Payment is handled separately with the business; this is not an online payment integration. The server filters portal records by both workspace and customer account.
 
+New workspace registrations stay pending until a platform admin approves them. Staff sign-in, customer sign-in, and the storefront remain unavailable until approval. Existing workspaces remain approved. Configure `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` in the server environment so an admin can review and approve workspaces at `/platform-admin/`.
+
 The signed-in customer portal includes an AI product assistant powered by Meta Model API. It answers using only that tenant's public product catalog; customer accounts, orders, invoices, and support records are not sent to the AI service. Customer messages and public product details are sent to Meta to generate answers, so customers are told not to enter passwords or payment details. Set `MODEL_API_KEY` in the server environment (or Vercel project environment variables) to enable it. `MODEL_API_MODEL` is optional and defaults to `muse-spark-1.3`. Without an API key, the assistant returns an explicit unavailable message.
 
 Customers can open `/customer-login` on the deployed site, enter their business name or workspace slug, and continue to that business's customer sign-in page. Tenants can also share the direct customer sign-in URL `/t/<workspace-slug>/portal/login`.
 
 ### Platform administration
 
-The optional platform admin area is at `/platform-admin/login`. It is separate from staff accounts and is configured with environment variables:
+The platform admin area is at `/platform-admin/login`. It is separate from staff accounts and is configured with environment variables. Platform admin credentials are required to approve new workspaces:
 
 - Search all workspaces by name or slug.
 - Review staff, customer, and order counts.
@@ -285,8 +287,8 @@ Generate a signing key locally with `python -c "from django.core.management.util
 | `DJANGO_DEBUG` | `false` |
 | `DATABASE_URL` | The provider's PostgreSQL connection URL |
 | `ALLOWED_HOSTS` | Comma-separated Vercel and custom-domain hostnames, without `https://` |
-| `PLATFORM_ADMIN_USERNAME` | Optional platform admin login name |
-| `PLATFORM_ADMIN_PASSWORD` | Optional long, unique platform admin password |
+| `PLATFORM_ADMIN_USERNAME` | Platform admin login name; required to approve new workspaces |
+| `PLATFORM_ADMIN_PASSWORD` | Long, unique platform admin password; required to approve new workspaces |
 | `MODEL_API_KEY` | Optional Meta Model API key for the customer product assistant |
 | `MODEL_API_MODEL` | Optional Meta model; defaults to `muse-spark-1.3` |
 
@@ -310,8 +312,8 @@ Vercel automatically runs `collectstatic` during the build because `STATIC_ROOT`
 | --- | --- | --- |
 | `SECRET_KEY` | Django session and CSRF signing key | Local-only development fallback; required when debug is disabled |
 | `DATABASE_URL` | Select SQLite, PostgreSQL, or MySQL connection | SQLite at `instance/business.db` in local debug mode; required in production |
-| `PLATFORM_ADMIN_USERNAME` | Platform admin login name | Empty (admin sign-in disabled) |
-| `PLATFORM_ADMIN_PASSWORD` | Platform admin password | Empty (admin sign-in disabled) |
+| `PLATFORM_ADMIN_USERNAME` | Platform admin login name | Empty (approval admin disabled) |
+| `PLATFORM_ADMIN_PASSWORD` | Platform admin password | Empty (approval admin disabled) |
 | `MODEL_API_KEY` | Meta Model API key for product-assistant replies | Empty (AI assistant disabled) |
 | `MODEL_API_MODEL` | Meta Model API model name | `muse-spark-1.3` |
 | `ALLOWED_HOSTS` | Comma-separated accepted host names | `*` locally; required in production (Vercel host variables are included automatically) |

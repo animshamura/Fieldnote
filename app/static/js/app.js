@@ -407,7 +407,7 @@ function ClientPortal() {
       </section>
       <footer className="client-footer"><span>${tenant.name}</span><span>Signed in as ${account.email}</span></footer>
     </main>
-    <CustomerHelpChat />
+    <${CustomerHelpChat} />
   </div>`;
 }
 
@@ -508,12 +508,22 @@ function PlatformLogin() {
   </main><div className="login-caption">RESTRICTED ADMIN AREA</div>`;
 }
 
+function WorkspacePending() {
+  const { tenant } = props;
+  return html`<${Brand} href="/" /><main className="login-card">
+    <div className="login-emblem">…</div><span className="kicker">WORKSPACE REVIEW</span><h1>Approval pending.</h1>
+    <p><strong>${tenant.name}</strong> is waiting for platform admin approval. Workspace and customer portal access will be available after approval.</p>
+    ${flashesView()}
+    <div className="auth-alternatives"><a href="/">Back to Fieldnote</a></div>
+  </main><div className="login-caption">FIELDNOTE WORKSPACE APPROVAL</div>`;
+}
+
 function PlatformDashboard() {
   const { tenants, search, user_counts, customer_counts, order_counts } = props;
   return html`<div className="platform-shell"><${PlatformHeader} /><main className="platform-content">${flashesView()}
     <section className="page-heading"><div><span className="kicker">PLATFORM OVERVIEW</span><h1>Workspaces</h1><p>Review and manage company workspaces across Fieldnote.</p></div><div className="platform-total"><strong>${tenants.length}</strong><span>${search ? "MATCHING " : ""}WORKSPACE${tenants.length === 1 ? "" : "S"}</span></div></section>
     <section className="panel platform-list-panel"><div className="panel-heading platform-list-heading"><div><span className="kicker">DIRECTORY</span><h2>All workspaces</h2></div><form className="workspace-search" method="get"><label className="visually-hidden" htmlFor="workspace-search">Search workspaces</label><input id="workspace-search" name="q" defaultValue=${search} placeholder="Search name or slug" /><button type="submit" aria-label="Search workspaces">⌕</button>${search ? html`<a href="/platform-admin/" aria-label="Clear search">×</a>` : null}</form></div>
-      ${tenants.length ? html`<div className="table-wrap"><table className="platform-table"><thead><tr><th>WORKSPACE</th><th>STAFF</th><th>CUSTOMERS</th><th>ORDERS</th><th>CREATED</th><th></th></tr></thead><tbody>${tenants.map((tenant) => html`<tr key=${tenant.id}><td><a className="workspace-name" href=${`/platform-admin/workspaces/${tenant.id}`}>${tenant.name}</a><span className="workspace-slug">${tenant.slug}</span></td><td>${user_counts[tenant.id] || 0}</td><td>${customer_counts[tenant.id] || 0}</td><td>${order_counts[tenant.id] || 0}</td><td>${dateLabel(tenant.created_at)}</td><td><a className="icon-action" href=${`/platform-admin/workspaces/${tenant.id}`} aria-label=${`Manage ${tenant.name}`} title="Manage workspace">↗</a></td></tr>`)}</tbody></table></div>` : html`<div className="empty-state"><span className="empty-icon">▦</span><strong>${search ? "No matching workspaces." : "No workspaces yet."}</strong><p>${search ? "Try another name or slug." : "New company registrations will appear here."}</p></div>`}
+      ${tenants.length ? html`<div className="table-wrap"><table className="platform-table"><thead><tr><th>WORKSPACE</th><th>STATUS</th><th>STAFF</th><th>CUSTOMERS</th><th>ORDERS</th><th>CREATED</th><th></th></tr></thead><tbody>${tenants.map((tenant) => html`<tr key=${tenant.id}><td><a className="workspace-name" href=${`/platform-admin/workspaces/${tenant.id}`}>${tenant.name}</a><span className="workspace-slug">${tenant.slug}</span></td><td><span className=${`status-pill ${tenant.is_approved ? "active" : "pending"}`}>${tenant.is_approved ? "Approved" : "Pending approval"}</span></td><td>${user_counts[tenant.id] || 0}</td><td>${customer_counts[tenant.id] || 0}</td><td>${order_counts[tenant.id] || 0}</td><td>${dateLabel(tenant.created_at)}</td><td><a className="icon-action" href=${`/platform-admin/workspaces/${tenant.id}`} aria-label=${`Manage ${tenant.name}`} title="Manage workspace">↗</a></td></tr>`)}</tbody></table></div>` : html`<div className="empty-state"><span className="empty-icon">▦</span><strong>${search ? "No matching workspaces." : "No workspaces yet."}</strong><p>${search ? "Try another name or slug." : "New company registrations will appear here."}</p></div>`}
     </section>
     <footer className="client-footer"><span>FIELDNOTE PLATFORM ADMINISTRATION</span><span>Workspace removal permanently deletes its associated records.</span></footer>
   </main></div>`;
@@ -522,7 +532,7 @@ function PlatformDashboard() {
 function PlatformWorkspace() {
   const { tenant, users, counts } = props;
   return html`<div className="platform-shell"><${PlatformHeader} /><main className="platform-content">${flashesView()}
-    <a className="back-link platform-back" href="/platform-admin/">← All workspaces</a><section className="page-heading platform-detail-heading"><div><span className="kicker">WORKSPACE DETAILS · ${tenant.slug}</span><h1>${tenant.name}</h1><p>Created ${dateLabel(tenant.created_at, { month: "long", day: "2-digit", year: "numeric" })}${tenant.industry ? ` · ${tenant.industry}` : ""}</p></div><a className="button button-primary" href=${`/t/${tenant.slug}/login`} target="_blank" rel="noopener">Open staff sign in <span>↗</span></a></section>
+    <a className="back-link platform-back" href="/platform-admin/">← All workspaces</a><section className="page-heading platform-detail-heading"><div><span className="kicker">WORKSPACE DETAILS · ${tenant.slug}</span><h1>${tenant.name}</h1><p>Created ${dateLabel(tenant.created_at, { month: "long", day: "2-digit", year: "numeric" })}${tenant.industry ? ` · ${tenant.industry}` : ""}</p><p><span className=${`status-pill ${tenant.is_approved ? "active" : "pending"}`}>${tenant.is_approved ? "Approved" : "Pending approval"}</span></p></div><div className="platform-workspace-actions">${tenant.is_approved ? null : html`<form method="post" action=${`/platform-admin/workspaces/${tenant.id}/approve`}>${csrf()}<button className="button button-primary" type="submit">Approve workspace <span>✓</span></button></form>`}<a className="button button-primary" href=${`/t/${tenant.slug}/login`} target="_blank" rel="noopener">Open staff sign in <span>↗</span></a></div></section>
     <div className="platform-detail-grid"><section className="panel platform-edit-panel"><div className="panel-heading"><div><span className="kicker">WORKSPACE PROFILE</span><h2>Edit details</h2></div></div><form className="form-stack platform-form" method="post" action=${`/platform-admin/workspaces/${tenant.id}/settings`}>${csrf()}<label>Company name<input name="name" defaultValue=${tenant.name} maxLength="150" required /></label><label>Industry<input name="industry" defaultValue=${tenant.industry || ""} maxLength="80" /></label><label>Address<input name="address" defaultValue=${tenant.address || ""} maxLength="255" /></label><div className="slug-note">Workspace slug <strong>${tenant.slug}</strong> cannot be changed here.</div><button className="button button-primary" type="submit">Save workspace details <span>↗</span></button></form></section>
       <section className="panel platform-data-panel"><div className="panel-heading"><div><span className="kicker">DATA INVENTORY</span><h2>Records in this workspace</h2></div></div><div className="inventory-list">${Object.entries(counts).map(([label, amount]) => html`<div key=${label}><span>${label}</span><strong>${amount}</strong></div>`)}</div></section>
     </div>
@@ -536,6 +546,7 @@ function PlatformWorkspace() {
 const pages = {
   index: AuthLanding,
   client_portal_entry: CustomerPortalEntry,
+  workspace_pending: WorkspacePending,
   login: () => html`<${LoginPage} />`,
   dashboard: Dashboard,
   resource: ResourcePage,

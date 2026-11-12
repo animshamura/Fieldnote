@@ -298,6 +298,8 @@ tbody tr:last-child td { border-bottom: 0; }
 .workspace-search button, .workspace-search a { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 4px; background: var(--green-pale); color: var(--green); cursor: pointer; font-size: 17px; }
 .platform-table td { height: 58px; }.platform-table td:first-child { min-width: 190px; }.workspace-name { display: block; color: var(--ink); font-size: 11px; font-weight: 700; }.workspace-name:hover { color: var(--green); }.workspace-slug { display: block; margin-top: 3px; color: #929b94; font-size: 9px; }
 .platform-back { display: inline-block; margin-bottom: 17px; text-align: left; }.platform-detail-heading { margin-bottom: 20px; }.platform-detail-heading h1 { font-size: 26px; }
+.platform-workspace-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }.platform-workspace-actions form { margin: 0; }
+.platform-detail-heading > div:first-child > p:last-child { margin-top: 9px; }
 .platform-detail-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(270px, .9fr); align-items: start; gap: 14px; }
 .platform-form { padding: 0 19px 19px; }.platform-form .button { justify-self: start; margin-top: 2px; }.slug-note { display: flex; gap: 7px; color: var(--muted); font-size: 10px; }.slug-note strong { color: #536258; }
 .inventory-list { padding: 0 19px 12px; }.inventory-list > div { display: flex; justify-content: space-between; border-top: 1px solid #f0f1ed; padding: 8px 0; color: #6a756e; font-size: 10px; }.inventory-list strong { color: var(--ink); font-size: 10px; }
@@ -311,7 +313,7 @@ tbody tr:last-child td { border-bottom: 0; }
   .platform-topbar { height: 56px; padding: 0 16px; }.platform-content { width: calc(100% - 28px); padding-top: 25px; }
   .platform-detail-grid, .danger-zone { grid-template-columns: minmax(0, 1fr); }.danger-zone { gap: 17px; padding: 16px; }
   .platform-list-heading { align-items: start; flex-direction: column; }.workspace-search { width: 100%; }.workspace-search input { width: auto; flex: 1; }
-  .platform-table { min-width: 620px; }.platform-detail-heading { align-items: start; }.platform-total { justify-items: start; }
+  .platform-table { min-width: 620px; }.platform-detail-heading { align-items: start; }.platform-workspace-actions { justify-content: flex-start; }.platform-total { justify-items: start; }
 }
 
 /* Brand polish and subtle interaction */

@@ -21,6 +21,21 @@ def index(request):
     )
 
 
+def workspace_pending(request, slug):
+    tenant = get_object_or_404(Tenant, slug=slug)
+    if tenant.is_approved:
+        return redirect("login", slug=slug)
+    return render_react(
+        request,
+        "workspace_pending",
+        {
+            "tenant": serialize(tenant),
+            "title": f"Workspace awaiting approval · {tenant.name}",
+        },
+        body_class="login-page",
+    )
+
+
 @require_POST
 def register(request):
     company_name = request.POST.get("company", "").strip()
@@ -43,7 +58,12 @@ def register(request):
 
     try:
         with transaction.atomic():
-            tenant = Tenant.objects.create(name=company_name, slug=slug, industry=industry or None)
+            tenant = Tenant.objects.create(
+                name=company_name,
+                slug=slug,
+                industry=industry or None,
+                is_approved=False,
+            )
             User.objects.create(
                 tenant=tenant,
                 username=username,
@@ -55,8 +75,8 @@ def register(request):
         messages.error(request, "A workspace with those details already exists.")
         return redirect("index")
 
-    messages.success(request, "Company created successfully.")
-    return redirect("login", slug=slug)
+    messages.success(request, "Workspace created. It is waiting for platform admin approval.")
+    return redirect("workspace_pending", slug=slug)
 
 
 @require_POST
@@ -75,6 +95,8 @@ def open_workspace(request):
 @require_http_methods(["GET", "POST"])
 def login(request, slug):
     tenant = get_object_or_404(Tenant, slug=slug)
+    if not tenant.is_approved:
+        return redirect("workspace_pending", slug=slug)
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")

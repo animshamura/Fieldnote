@@ -13,6 +13,8 @@ def tenant_required(view):
     @wraps(view)
     def wrapped(request, slug, *args, **kwargs):
         tenant = get_object_or_404(Tenant, slug=slug)
+        if not tenant.is_approved:
+            return redirect("workspace_pending", slug=slug)
         user = User.objects.filter(
             id=request.session.get("user_id"),
             tenant_id=tenant.id,
@@ -31,6 +33,8 @@ def client_required(view):
     @wraps(view)
     def wrapped(request, slug, *args, **kwargs):
         tenant = get_object_or_404(Tenant, slug=slug)
+        if not tenant.is_approved:
+            return redirect("workspace_pending", slug=slug)
         account = ClientAccount.objects.filter(
             id=request.session.get("client_account_id"),
             tenant_id=tenant.id,

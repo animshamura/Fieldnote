@@ -143,6 +143,19 @@ def workspace_detail(request, tenant_id):
 
 @platform_admin_required
 @require_POST
+def approve_workspace(request, tenant_id):
+    tenant = get_object_or_404(Tenant, id=tenant_id)
+    if tenant.is_approved:
+        messages.info(request, "This workspace is already approved.")
+    else:
+        tenant.is_approved = True
+        tenant.save(update_fields=["is_approved"])
+        messages.success(request, f"{tenant.name} is approved and ready to use.")
+    return redirect("platform_workspace", tenant_id=tenant.id)
+
+
+@platform_admin_required
+@require_POST
 def update_workspace(request, tenant_id):
     tenant = get_object_or_404(Tenant, id=tenant_id)
     name = request.POST.get("name", "").strip()

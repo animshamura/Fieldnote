@@ -65,6 +65,8 @@ def google_auth_props(request):
 
 def find_valid_invite(slug, token):
     tenant = get_object_or_404(Tenant, slug=slug)
+    if not tenant.is_approved:
+        return tenant, None
     invite = ClientInvite.objects.filter(
         tenant=tenant,
         token_hash=token_digest(token),
@@ -129,6 +131,8 @@ def create_invite(request, slug, customer_id):
 @require_http_methods(["GET", "POST"])
 def accept_invite(request, slug, token):
     tenant, invite = find_valid_invite(slug, token)
+    if not tenant.is_approved:
+        return redirect("workspace_pending", slug=slug)
     if invite is None:
         return render_react(
             request, "invite_invalid",
@@ -199,6 +203,8 @@ def portal_entry(request):
 @require_http_methods(["GET", "POST"])
 def login(request, slug):
     tenant = get_object_or_404(Tenant, slug=slug)
+    if not tenant.is_approved:
+        return redirect("workspace_pending", slug=slug)
     if request.method == "POST":
         email = request.POST.get("email", "").strip().lower()
         password = request.POST.get("password", "")
@@ -362,6 +368,8 @@ def product_chat(request, slug):
 
 def store(request, slug):
     tenant = get_object_or_404(Tenant, slug=slug)
+    if not tenant.is_approved:
+        return redirect("workspace_pending", slug=slug)
     products = Product.objects.filter(tenant=tenant, price__gte=0).order_by("name", "id")
     return render_react(
         request,
@@ -384,6 +392,8 @@ def store(request, slug):
 @require_http_methods(["GET", "POST"])
 def signup(request, slug):
     tenant = get_object_or_404(Tenant, slug=slug)
+    if not tenant.is_approved:
+        return redirect("workspace_pending", slug=slug)
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
         email = request.POST.get("email", "").strip().lower()
@@ -476,6 +486,8 @@ def verified_google_identity(credential):
 @require_POST
 def google_login(request, slug):
     tenant = get_object_or_404(Tenant, slug=slug)
+    if not tenant.is_approved:
+        return redirect("workspace_pending", slug=slug)
     try:
         identity = verified_google_identity(request.POST.get("credential", ""))
     except (ValueError, TypeError) as error:

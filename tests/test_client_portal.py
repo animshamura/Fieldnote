@@ -39,6 +39,8 @@ class ClientPortalFlowTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         tenant = Tenant.objects.get(slug=company.lower().replace(" ", "-"))
+        tenant.is_approved = True
+        tenant.save(update_fields=["is_approved"])
         response = self.staff.post(
             f"/t/{tenant.slug}/login",
             data={"username": "owner", "password": "password123"},
@@ -90,7 +92,72 @@ class ClientPortalFlowTest(TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(Tenant.objects.filter(slug="csrf-workspace").exists())
+        tenant = Tenant.objects.get(slug="csrf-workspace")
+        self.assertFalse(tenant.is_approved)
+        self.assertEqual(response["Location"], f"/t/{tenant.slug}/pending")
+
+    def test_new_workspace_requires_platform_admin_approval_before_use(self):
+        response = self.staff.post(
+            "/register",
+            data={
+                "company": "Awaiting Approval",
+                "username": "owner",
+                "email": "owner@example.test",
+                "password": "password123",
+            },
+            follow=True,
+        )
+        tenant = Tenant.objects.get(slug="awaiting-approval")
+        self.assertFalse(tenant.is_approved)
+        self.assertIn(b'"page": "workspace_pending"', response.content)
+
+        response = self.staff.post(
+            f"/t/{tenant.slug}/login",
+            data={"username": "owner", "password": "password123"},
+            follow=True,
+        )
+        self.assertIn(b'"page": "workspace_pending"', response.content)
+        response = Client().get(f"/t/{tenant.slug}/store/", follow=True)
+        self.assertIn(b'"page": "workspace_pending"', response.content)
+        customer = Client()
+        response = customer.post(
+            f"/t/{tenant.slug}/portal/signup",
+            data={
+                "name": "Early Customer",
+                "email": "early@example.test",
+                "password": "customer-password",
+            },
+            follow=True,
+        )
+        self.assertIn(b'"page": "workspace_pending"', response.content)
+        self.assertFalse(ClientAccount.objects.filter(tenant=tenant).exists())
+
+        admin = Client()
+        response = admin.post(f"/platform-admin/workspaces/{tenant.id}/approve")
+        self.assertEqual(response.status_code, 302)
+        tenant.refresh_from_db()
+        self.assertFalse(tenant.is_approved)
+
+        admin.post(
+            "/platform-admin/login",
+            data={"username": "platform-owner", "password": "platform-secret-for-tests"},
+        )
+        response = admin.get(f"/platform-admin/workspaces/{tenant.id}")
+        self.assertIn(b'"is_approved": false', response.content)
+        response = admin.post(
+            f"/platform-admin/workspaces/{tenant.id}/approve",
+            follow=True,
+        )
+        self.assertContains(response, "is approved and ready to use.")
+        tenant.refresh_from_db()
+        self.assertTrue(tenant.is_approved)
+
+        response = self.staff.post(
+            f"/t/{tenant.slug}/login",
+            data={"username": "owner", "password": "password123"},
+            follow=True,
+        )
+        self.assertIn(b'"page": "dashboard"', response.content)
 
     def test_customer_portal_entry_finds_workspace_and_opens_customer_sign_in(self):
         tenant = Tenant.objects.create(name="Northwind Studio", slug="northwind-studio")

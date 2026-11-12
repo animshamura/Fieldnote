@@ -6,6 +6,7 @@ urlpatterns = [
     path("", auth.index, name="index"),
     path("register", auth.register, name="register"),
     path("workspace", auth.open_workspace, name="open_workspace"),
+    path("t/<slug:slug>/pending", auth.workspace_pending, name="workspace_pending"),
     path("t/<slug:slug>/login", auth.login, name="login"),
     path("t/<slug:slug>/logout", auth.logout, name="logout"),
     path("t/<slug:slug>/", dashboard.dashboard, name="dashboard"),
@@ -27,6 +28,7 @@ urlpatterns = [
     path("platform-admin/login", platform_admin.login, name="platform_login"),
     path("platform-admin/logout", platform_admin.logout, name="platform_logout"),
     path("platform-admin/workspaces/<int:tenant_id>", platform_admin.workspace_detail, name="platform_workspace"),
+    path("platform-admin/workspaces/<int:tenant_id>/approve", platform_admin.approve_workspace, name="approve_workspace"),
     path("platform-admin/workspaces/<int:tenant_id>/settings", platform_admin.update_workspace, name="update_workspace"),
     path("platform-admin/workspaces/<int:tenant_id>/delete", platform_admin.delete_workspace, name="delete_workspace"),
 ]
