@@ -57,6 +57,24 @@ class ClientPortalFlowTest(TestCase):
             raise AssertionError("React bootstrap payload was not rendered")
         return json.loads(match.group(1))
 
+    def create_client_browser(self, tenant, email="customer@example.test"):
+        customer = Customer.objects.create(
+            tenant=tenant,
+            name="Portal Customer",
+            email=email,
+        )
+        account = ClientAccount.objects.create(
+            tenant=tenant,
+            customer=customer,
+            email=email,
+            password_hash="unused-test-password-hash",
+        )
+        browser = Client()
+        session = browser.session
+        session["client_account_id"] = account.id
+        session.save()
+        return browser
+
     def test_registration_requires_django_csrf_token(self):
         browser = Client(enforce_csrf_checks=True)
         response = browser.get("/")
@@ -73,6 +91,107 @@ class ClientPortalFlowTest(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Tenant.objects.filter(slug="csrf-workspace").exists())
+
+    def test_customer_portal_entry_finds_workspace_and_opens_customer_sign_in(self):
+        tenant = Tenant.objects.create(name="Northwind Studio", slug="northwind-studio")
+        response = self.staff.get("/customer-login")
+        self.assertIn(b'"page": "client_portal_entry"', response.content)
+
+        response = self.staff.post(
+            "/customer-login",
+            data={"workspace": "Northwind Studio"},
+        )
+        self.assertRedirects(
+            response,
+            f"/t/{tenant.slug}/portal/login",
+            fetch_redirect_response=False,
+        )
+
+        response = self.staff.post(
+            "/customer-login",
+            data={"workspace": "missing-business"},
+            follow=True,
+        )
+        self.assertContains(response, "We could not find that business.")
+
+    @override_settings(MODEL_API_KEY="test-model-api-key", MODEL_API_MODEL="test-model")
+    def test_customer_ai_chat_uses_only_the_current_tenant_public_catalog(self):
+        tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
+        other_tenant = Tenant.objects.create(name="Other Shop", slug="other-shop")
+        Product.objects.create(
+            tenant=tenant,
+            name="Blue Vase",
+            sku="VASE-1",
+            price=25.5,
+            stock=4,
+            description="A handmade ceramic vase.",
+        )
+        Product.objects.create(
+            tenant=other_tenant,
+            name="Private Product",
+            sku="PRIVATE-1",
+            price=99,
+            stock=1,
+            description="A product from another tenant.",
+        )
+        browser = self.create_client_browser(tenant)
+        provider_response = {
+            "choices": [{"message": {"content": "The Blue Vase costs $25.50."}}],
+        }
+
+        with patch("app.routes.client_portal.urlopen") as meta_request:
+            meta_request.return_value.__enter__.return_value.read.return_value = (
+                json.dumps(provider_response).encode("utf-8")
+            )
+            response = browser.post(
+                f"/t/{tenant.slug}/portal/chat",
+                data=json.dumps({"message": "Tell me about the Blue Vase."}),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"answer": "The Blue Vase costs $25.50."})
+        request = meta_request.call_args.args[0]
+        self.assertEqual(request.full_url, "https://api.meta.ai/v1/chat/completions")
+        self.assertEqual(request.get_header("Authorization"), "Bearer test-model-api-key")
+        payload = json.loads(request.data)
+        self.assertEqual(payload["model"], "test-model")
+        self.assertEqual(payload["reasoning_effort"], "minimal")
+        catalog = json.loads(payload["messages"][-1]["content"])["public_product_catalog"]
+        self.assertEqual([product["name"] for product in catalog], ["Blue Vase"])
+        self.assertNotIn("customer@example.test", request.data.decode("utf-8"))
+
+    @override_settings(MODEL_API_KEY="")
+    def test_customer_ai_chat_reports_missing_api_key_without_calling_openai(self):
+        tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
+        browser = self.create_client_browser(tenant)
+
+        with patch("app.routes.client_portal.urlopen") as meta_request:
+            response = browser.post(
+                f"/t/{tenant.slug}/portal/chat",
+                data=json.dumps({"message": "What products are available?"}),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("not configured", response.json()["error"])
+        meta_request.assert_not_called()
+
+    @override_settings(MODEL_API_KEY="test-model-api-key")
+    def test_customer_ai_chat_rejects_oversized_question_without_calling_openai(self):
+        tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
+        browser = self.create_client_browser(tenant)
+
+        with patch("app.routes.client_portal.urlopen") as meta_request:
+            response = browser.post(
+                f"/t/{tenant.slug}/portal/chat",
+                data=json.dumps({"message": "x" * 501}),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("500 characters", response.json()["error"])
+        meta_request.assert_not_called()
 
     def test_existing_werkzeug_staff_password_is_upgraded_on_login(self):
         tenant = Tenant.objects.create(name="Legacy Workspace", slug="legacy-workspace")

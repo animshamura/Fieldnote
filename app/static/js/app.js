@@ -62,7 +62,7 @@ function AuthLanding() {
             <label>Password <span className="field-hint">8 characters minimum</span><input type="password" name="password" autoComplete="new-password" placeholder="Create a password" minLength="8" required /></label>
             <button className="button button-primary button-wide" type="submit">Create workspace <span>↗</span></button>
           </form>
-          <div className="auth-footnote"><strong>Already have a workspace?</strong><form className="workspace-lookup" method="post" action="/workspace">${csrf()}<input name="slug" placeholder="Enter your workspace name" aria-label="Workspace name" required /><button type="submit" aria-label="Open workspace sign in">→</button></form></div>
+          <div className="auth-footnote"><strong>Already have a workspace?</strong><form className="workspace-lookup" method="post" action="/workspace">${csrf()}<input name="slug" placeholder="Enter your workspace name" aria-label="Workspace name" required /><button type="submit" aria-label="Open workspace sign in">→</button></form><p>Customer? <a className="text-link" href="/customer-login">Sign in to your customer portal ↗</a></p></div>
         </div>
         <div className="panel-footer"><span>LESS SCATTER. MORE FOLLOW-THROUGH.</span><a href="/platform-admin/login">PLATFORM ADMIN ↗</a></div>
       </section>
@@ -97,6 +97,23 @@ function LoginPage({ portal = false }) {
         : html`<div className="login-card-footer"><span>Need a different workspace?</span><a href="/">Create a workspace ↗</a></div>`}
     </main>
     <div className="login-caption">${portal ? "FIELDNOTE CUSTOMER PORTAL" : "PRIVATE ACCESS FOR YOUR TEAM"}</div>`;
+}
+
+function CustomerPortalEntry() {
+  return html`
+    <header className="login-header"><${Brand} className="login-brand" /><span className="login-header-note">CUSTOMER ACCESS</span></header>
+    <main className="login-card customer-login-card">
+      <div className="login-emblem">↗</div><span className="kicker">CUSTOMER PORTAL</span><h1>Find your business.</h1>
+      <p>Enter the business name or workspace slug to open its customer sign-in page.</p>
+      ${flashesView()}
+      <form className="form-stack" method="post" action="/customer-login">
+        ${csrf()}
+        <label>Business name or workspace slug<input name="workspace" autoComplete="organization" placeholder="Northwind Studio" required autoFocus /></label>
+        <button className="button button-primary button-wide" type="submit">Continue to sign in <span>↗</span></button>
+      </form>
+      <div className="auth-alternatives"><p>Are you a team member? <a href="/">Go to staff sign in</a></p></div>
+    </main>
+    <div className="login-caption">FIELDNOTE CUSTOMER PORTAL</div>`;
 }
 
 const staffNav = [
@@ -390,6 +407,93 @@ function ClientPortal() {
       </section>
       <footer className="client-footer"><span>${tenant.name}</span><span>Signed in as ${account.email}</span></footer>
     </main>
+    <CustomerHelpChat />
+  </div>`;
+}
+
+function CustomerHelpChat() {
+  const [open, setOpen] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      sender: "assistant",
+      text: "Hi! Ask me about this business's products, prices, or availability. I don't have access to orders or account details.",
+    },
+  ]);
+  const sendQuestion = async (value) => {
+    const text = value.trim();
+    if (!text || loading) return;
+    const history = messages.slice(-6).map((message) => ({
+      role: message.sender === "customer" ? "user" : "assistant",
+      content: message.text,
+    }));
+    setMessages((current) => [...current, { sender: "customer", text }]);
+    setQuestion("");
+    setError("");
+    setLoading(true);
+    try {
+      const response = await fetch(`/t/${props.tenant.slug}/portal/chat`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+        },
+        body: JSON.stringify({ message: text, history }),
+      });
+      if (response.redirected) {
+        window.location.assign(response.url);
+        return;
+      }
+      let payload;
+      try {
+        payload = await response.json();
+      } catch {
+        throw new Error("The assistant returned an unreadable response. Please try again.");
+      }
+      if (!response.ok) {
+        throw new Error(payload.error || "The assistant could not respond. Please try again.");
+      }
+      if (typeof payload.answer !== "string" || !payload.answer.trim()) {
+        throw new Error("The assistant returned an empty response. Please try again.");
+      }
+      setMessages((current) => [
+        ...current,
+        { sender: "assistant", text: payload.answer.trim() },
+      ]);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "The assistant could not respond. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return html`<div className="portal-help-widget">
+    ${open ? html`<section id="portal-help-panel" className="portal-help-panel" role="region" aria-label="Customer portal help">
+      <header className="portal-help-header"><div><span className="kicker">AI PRODUCT ASSISTANT</span><strong>Ask about products</strong></div><button type="button" className="portal-help-close" aria-label="Close help" onClick=${() => setOpen(false)}>×</button></header>
+      <div className="portal-help-messages" role="log" aria-live="polite" aria-relevant="additions">
+        ${messages.map((message, index) => html`<p key=${index} className=${`portal-help-message ${message.sender}`}>${message.text}</p>`)}
+        ${loading ? html`<p className="portal-help-message assistant" role="status">Thinking…</p>` : null}
+      </div>
+      <div className="portal-help-topics" aria-label="Suggested questions">
+        ${["What products do you have?", "Which items are in stock?", "Tell me about a product"].map((prompt) => html`<button type="button" key=${prompt} disabled=${loading} onClick=${() => sendQuestion(prompt)}>${prompt}</button>`)}
+      </div>
+      <p className="portal-help-disclaimer">Your message and this business's public product catalog are sent to Meta Model API to generate replies. Don't share passwords or payment details.</p>
+      ${error ? html`<p className="portal-help-error" role="alert">${error}</p>` : null}
+      <form className="portal-help-form" onSubmit=${(event) => {
+        event.preventDefault();
+        sendQuestion(question);
+      }}>
+        <label className="visually-hidden" htmlFor="portal-help-question">Ask a question</label>
+        <input id="portal-help-question" value=${question} onInput=${(event) => setQuestion(event.currentTarget.value)} placeholder="Ask a product question…" maxLength="500" autoComplete="off" disabled=${loading} />
+        <button type="submit" aria-label="Send question" disabled=${loading || !question.trim()}>Send</button>
+      </form>
+    </section>` : null}
+    <button type="button" className="portal-help-launcher" aria-expanded=${open} aria-controls=${open ? "portal-help-panel" : undefined} onClick=${() => setOpen((current) => !current)}>
+      ${open ? "×" : "?"}<span className="visually-hidden">${open ? "Close customer help" : "Open customer help"}</span>
+    </button>
   </div>`;
 }
 
@@ -431,6 +535,7 @@ function PlatformWorkspace() {
 
 const pages = {
   index: AuthLanding,
+  client_portal_entry: CustomerPortalEntry,
   login: () => html`<${LoginPage} />`,
   dashboard: Dashboard,
   resource: ResourcePage,
