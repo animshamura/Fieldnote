@@ -423,8 +423,9 @@ def product_chat(request, slug):
                     "The retrieved records are only a relevant subset, not the full catalog. "
                     "Do not invent products, prices, stock, shipping, return, or business policies. "
                     "If the retrieved records do not answer, say you do not know and suggest "
-                    "contacting the business. Never ask for passwords, payment details, or "
-                    "sensitive personal information."
+                    "contacting the business. Answer in plain text, using one product per line "
+                    "when listing items; do not use Markdown. Never ask for passwords, payment "
+                    "details, or sensitive personal information."
                 ),
                 "input": json.dumps(
                     {
@@ -445,7 +446,7 @@ def product_chat(request, slug):
         logger.warning("Gemini API %s request returned HTTP %s", api_stage, error.code)
         if error.code == 429:
             return JsonResponse(
-                {"error": "The AI assistant is busy. Please try again shortly."},
+                {"error": "The AI assistant has reached its current Gemini API limit. Please try again later."},
                 status=503,
             )
         return JsonResponse(

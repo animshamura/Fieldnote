@@ -17,6 +17,11 @@ const dateLabel = (value, options = { month: "short", day: "numeric", year: "num
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString(undefined, options);
 };
 
+const formatAssistantMessage = (text) => text
+  .replace(/\*\*(.+?)\*\*/g, "$1")
+  .replace(/(^|\n)\s*[*-]\s+/g, "$1• ")
+  .replace(/(^|\n)\s*#{1,6}\s+/g, "$1");
+
 const statusClass = (value) => String(value || "").toLowerCase().replaceAll(" ", "-");
 const csrf = () => html`<input type="hidden" name="csrfmiddlewaretoken" value=${csrfToken} />`;
 const flashesView = () => flashes?.length
@@ -474,7 +479,7 @@ function CustomerHelpChat() {
     ${open ? html`<section id="portal-help-panel" className="portal-help-panel" role="region" aria-label="Customer portal help">
       <header className="portal-help-header"><div><span className="kicker">AI PRODUCT ASSISTANT</span><strong>Ask about products</strong></div><button type="button" className="portal-help-close" aria-label="Close help" onClick=${() => setOpen(false)}>×</button></header>
       <div className="portal-help-messages" role="log" aria-live="polite" aria-relevant="additions">
-        ${messages.map((message, index) => html`<p key=${index} className=${`portal-help-message ${message.sender}`}>${message.text}</p>`)}
+        ${messages.map((message, index) => html`<p key=${index} className=${`portal-help-message ${message.sender}`}>${message.sender === "assistant" ? formatAssistantMessage(message.text) : message.text}</p>`)}
         ${loading ? html`<p className="portal-help-message assistant" role="status">Thinking…</p>` : null}
       </div>
       <div className="portal-help-topics" aria-label="Suggested questions">

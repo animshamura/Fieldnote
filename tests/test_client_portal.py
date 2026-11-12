@@ -2,6 +2,7 @@ import json
 import re
 import unittest
 from datetime import date, datetime, timedelta, timezone
+from urllib.error import HTTPError
 from urllib.parse import urlparse
 from unittest.mock import patch
 
@@ -292,6 +293,30 @@ class ClientPortalFlowTest(TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("not configured", response.json()["error"])
         gemini_request.assert_not_called()
+
+    @override_settings(GEMINI_API_KEY="test-gemini-api-key")
+    def test_customer_ai_chat_explains_gemini_request_limit(self):
+        tenant = Tenant.objects.create(name="Market Shop", slug="market-shop")
+        browser = self.create_client_browser(tenant)
+
+        with patch(
+            "app.routes.client_portal.urlopen",
+            side_effect=HTTPError(
+                "https://generativelanguage.googleapis.com/",
+                429,
+                "Too Many Requests",
+                hdrs=None,
+                fp=None,
+            ),
+        ):
+            response = browser.post(
+                f"/t/{tenant.slug}/portal/chat",
+                data=json.dumps({"message": "What products are available?"}),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("current Gemini API limit", response.json()["error"])
 
     @override_settings(GEMINI_API_KEY="test-gemini-api-key")
     def test_customer_ai_chat_rejects_oversized_question_without_calling_provider(self):
