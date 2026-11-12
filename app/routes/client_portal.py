@@ -436,7 +436,8 @@ def product_chat(request, slug):
                 ),
                 "store": False,
                 "generation_config": {
-                    "max_output_tokens": 250,
+                    "max_output_tokens": 512,
+                    "thinking_level": "low",
                 },
             },
         )
@@ -481,7 +482,17 @@ def product_chat(request, slug):
                 )
     answer = "".join(text_blocks)
     if not isinstance(answer, str) or not answer.strip():
-        logger.warning("Gemini API chat response did not contain an answer")
+        step_types = [
+            step.get("type")
+            for step in steps
+            if isinstance(step, dict)
+        ] if isinstance(steps, list) else []
+        status = interaction.get("status") if isinstance(interaction, dict) else None
+        logger.warning(
+            "Gemini API chat response did not contain an answer (status=%s, steps=%s)",
+            status,
+            step_types,
+        )
         return JsonResponse(
             {"error": "The AI assistant returned an empty response. Please try again."},
             status=502,
