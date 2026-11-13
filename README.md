@@ -36,24 +36,28 @@
 
 ## Demo Screenshots
 
-<p align="justify">Fieldnote brings together the complete business workflow in one platform: onboarding, staff operations, commerce, customer support, and platform oversight. The gallery below highlights the most important screens without overwhelming the page, while still giving a clear idea of the complete system.</p>
+<p align="justify">Fieldnote brings together the complete business workflow in one platform: onboarding, staff operations, commerce, customer support, and platform oversight. The gallery includes every screenshot currently available in <code>docs/screenshots</code>, arranged in a compact grid to give a broad view of the system.</p>
 
 <div align="center">
-  <img src="docs/screenshots/landing.png" width="290" alt="Fieldnote landing page" />
-  <img src="docs/screenshots/workspace-login.png" width="290" alt="Workspace sign in" />
-  <img src="docs/screenshots/dashboard.png" width="290" alt="Fieldnote staff dashboard" />
+  <img src="docs/screenshots/landing.png" width="220" alt="Fieldnote landing page" />
+  <img src="docs/screenshots/workspace-login.png" width="220" alt="Workspace sign in" />
+  <img src="docs/screenshots/dashboard.png" width="220" alt="Fieldnote staff dashboard" />
+  <img src="docs/screenshots/customers.png" width="220" alt="Customer management" />
   <br /><br />
-  <img src="docs/screenshots/customers.png" width="290" alt="Customer management" />
-  <img src="docs/screenshots/products.png" width="290" alt="Product management" />
-  <img src="docs/screenshots/orders.png" width="290" alt="Order management" />
+  <img src="docs/screenshots/products.png" width="220" alt="Product management" />
+  <img src="docs/screenshots/orders.png" width="220" alt="Order management" />
+  <img src="docs/screenshots/invoices.png" width="220" alt="Invoices overview" />
+  <img src="docs/screenshots/tickets.png" width="220" alt="Support ticket management" />
   <br /><br />
-  <img src="docs/screenshots/invoices.png" width="290" alt="Invoices overview" />
-  <img src="docs/screenshots/employees.png" width="290" alt="Employee management" />
-  <img src="docs/screenshots/customer-storefront.png" width="290" alt="Customer storefront" />
+  <img src="docs/screenshots/subscriptions.png" width="220" alt="Subscription management" />
+  <img src="docs/screenshots/departments.png" width="220" alt="Department management" />
+  <img src="docs/screenshots/employees.png" width="220" alt="Employee management" />
+  <img src="docs/screenshots/platform-login.png" width="220" alt="Platform admin sign in" />
   <br /><br />
-  <img src="docs/screenshots/customer-signup.png" width="290" alt="Customer signup flow" />
-  <img src="docs/screenshots/customer-login.png" width="290" alt="Customer sign in" />
-  <img src="docs/screenshots/platform-login.png" width="290" alt="Platform admin sign in" />
+  <img src="docs/screenshots/customer-storefront.png" width="220" alt="Customer storefront" />
+  <img src="docs/screenshots/customer-signup.png" width="220" alt="Customer signup flow" />
+  <img src="docs/screenshots/customer-login.png" width="220" alt="Customer sign in" />
+  <img src="docs/screenshots/customer-portal.png" width="220" alt="Customer portal" />
 </div>
 
 ## Features
