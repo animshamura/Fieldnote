@@ -2,7 +2,7 @@
 
 <p align="justify">Fieldnote is a multi-tenant business management platform for small and growing companies. Each tenant gets an isolated workspace where staff can manage customers, products, orders, invoices, support tickets, subscriptions, departments, and employees. Customers can also sign in to a storefront portal to browse products, place orders, review invoices, and open support requests.</p>
 
-## Index
+## Indexes
 
 - [Project Overview](#project-overview)
 - [Features](#features)
@@ -36,24 +36,24 @@
 
 ## Demo Screenshots
 
-<p align="justify">Fieldnote is a complete multi-tenant business system covering both internal operations and customer-facing workflows. The gallery below gives a full overview of the platform across onboarding, staff workflows, storefront experiences, and platform administration.</p>
+<p align="justify">Fieldnote brings together the complete business workflow in one platform: onboarding, staff operations, commerce, customer support, and platform oversight. The gallery below highlights the most important screens without overwhelming the page, while still giving a clear idea of the complete system.</p>
 
 <div align="center">
-  <img src="docs/screenshots/demo-01-landing.png" width="290" alt="Fieldnote landing page" />
-  <img src="docs/screenshots/demo-02-workspace-login.png" width="290" alt="Workspace sign in" />
-  <img src="docs/screenshots/demo-02-dashboard.png" width="290" alt="Fieldnote staff dashboard" />
+  <img src="docs/screenshots/landing.png" width="290" alt="Fieldnote landing page" />
+  <img src="docs/screenshots/workspace-login.png" width="290" alt="Workspace sign in" />
+  <img src="docs/screenshots/dashboard.png" width="290" alt="Fieldnote staff dashboard" />
   <br /><br />
-  <img src="docs/screenshots/demo-03-customers.png" width="290" alt="Customer management" />
-  <img src="docs/screenshots/demo-04-products.png" width="290" alt="Product management" />
-  <img src="docs/screenshots/demo-05-customer-storefront.png" width="290" alt="Customer storefront" />
+  <img src="docs/screenshots/customers.png" width="290" alt="Customer management" />
+  <img src="docs/screenshots/products.png" width="290" alt="Product management" />
+  <img src="docs/screenshots/orders.png" width="290" alt="Order management" />
   <br /><br />
-  <img src="docs/screenshots/demo-06-platform-admin.png" width="290" alt="Platform admin overview" />
-  <img src="docs/screenshots/dashboard.png" width="290" alt="Staff dashboard overview" />
-  <img src="docs/screenshots/customers.png" width="290" alt="Customer records" />
+  <img src="docs/screenshots/invoices.png" width="290" alt="Invoices overview" />
+  <img src="docs/screenshots/employees.png" width="290" alt="Employee management" />
+  <img src="docs/screenshots/customer-storefront.png" width="290" alt="Customer storefront" />
   <br /><br />
-  <img src="docs/screenshots/landing.png" width="290" alt="Landing page" />
-  <img src="docs/screenshots/platform-admin.png" width="290" alt="Platform administration" />
-  <img src="docs/screenshots/customer-portal.png" width="290" alt="Customer portal" />
+  <img src="docs/screenshots/customer-signup.png" width="290" alt="Customer signup flow" />
+  <img src="docs/screenshots/customer-login.png" width="290" alt="Customer sign in" />
+  <img src="docs/screenshots/platform-login.png" width="290" alt="Platform admin sign in" />
 </div>
 
 ## Features
