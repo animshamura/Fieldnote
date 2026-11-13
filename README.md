@@ -36,34 +36,24 @@
 
 ## Demo Screenshots
 
-<p align="justify">Fieldnote includes a complete set of dashboard, customer, portal, and platform administration screens designed for live business operations. The screenshots below show the real application experience across the landing page, staff workspace, customer storefront, and platform admin tools.</p>
+<p align="justify">Fieldnote is a complete multi-tenant business system covering both internal operations and customer-facing workflows. The gallery below gives a full overview of the platform across onboarding, staff workflows, storefront experiences, and platform administration.</p>
 
 <div align="center">
-  <img src="docs/screenshots/demo-01-landing.png" width="900" alt="Fieldnote landing page" />
+  <img src="docs/screenshots/demo-01-landing.png" width="290" alt="Fieldnote landing page" />
+  <img src="docs/screenshots/demo-02-workspace-login.png" width="290" alt="Workspace sign in" />
+  <img src="docs/screenshots/demo-02-dashboard.png" width="290" alt="Fieldnote staff dashboard" />
   <br /><br />
-  <img src="docs/screenshots/demo-02-workspace-login.png" width="900" alt="Workspace sign in form" />
+  <img src="docs/screenshots/demo-03-customers.png" width="290" alt="Customer management" />
+  <img src="docs/screenshots/demo-04-products.png" width="290" alt="Product management" />
+  <img src="docs/screenshots/demo-05-customer-storefront.png" width="290" alt="Customer storefront" />
   <br /><br />
-  <img src="docs/screenshots/demo-03-dashboard.png" width="900" alt="Staff dashboard overview" />
+  <img src="docs/screenshots/demo-06-platform-admin.png" width="290" alt="Platform admin overview" />
+  <img src="docs/screenshots/dashboard.png" width="290" alt="Staff dashboard overview" />
+  <img src="docs/screenshots/customers.png" width="290" alt="Customer records" />
   <br /><br />
-  <img src="docs/screenshots/demo-04-customers.png" width="900" alt="Customer management screen" />
-  <br /><br />
-  <img src="docs/screenshots/demo-05-products.png" width="900" alt="Product catalog management" />
-  <br /><br />
-  <img src="docs/screenshots/demo-06-orders.png" width="900" alt="Order management screen" />
-  <br /><br />
-  <img src="docs/screenshots/demo-07-invoices.png" width="900" alt="Invoice management screen" />
-  <br /><br />
-  <img src="docs/screenshots/demo-08-tickets.png" width="900" alt="Support ticket management" />
-  <br /><br />
-  <img src="docs/screenshots/demo-09-subscriptions.png" width="900" alt="Subscription management screen" />
-  <br /><br />
-  <img src="docs/screenshots/demo-10-customer-portal-login.png" width="900" alt="Customer portal entry screen" />
-  <br /><br />
-  <img src="docs/screenshots/demo-11-platform-admin-login.png" width="900" alt="Platform admin sign in" />
-  <br /><br />
-  <img src="docs/screenshots/demo-12-platform-admin-dashboard.png" width="900" alt="Platform admin workspace dashboard" />
-  <br /><br />
-  <img src="docs/screenshots/demo-13-customer-storefront.png" width="900" alt="Customer storefront" />
+  <img src="docs/screenshots/landing.png" width="290" alt="Landing page" />
+  <img src="docs/screenshots/platform-admin.png" width="290" alt="Platform administration" />
+  <img src="docs/screenshots/customer-portal.png" width="290" alt="Customer portal" />
 </div>
 
 ## Features
