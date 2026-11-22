@@ -14,32 +14,26 @@
 
 </div>
 
-Fieldnote gives each company its own workspace to manage customers, products, orders, invoices,
-support tickets, subscriptions, employees, and departments. Customers get a separate portal where
-they can browse the storefront, place orders, and review their own orders, invoices, and tickets.
-A platform administrator approves new workspaces and oversees the whole deployment.
-
-All tenants share one database; isolation is enforced in application code by scoping every query
-to the current tenant (see [Multi-Tenancy Design](#multi-tenancy-design)).
+Each company gets an isolated workspace for customers, products, orders, invoices, tickets, subscriptions and staff. Customers get their own portal and storefront. A platform admin approves and governs workspaces. All tenants share one database; every query is tenant-scoped ([details](#multi-tenancy-design)).
 
 ---
 
 ## Table of Contents
 
 1. [Project Overview](#project-overview)
-2. [Features](#features)
-3. [System Architecture](#system-architecture)
-4. [System Design](#system-design)
-5. [Security Design](#security-design)
-6. [Route Reference](#route-reference)
-7. [Quick Start](#quick-start)
-8. [Configuration](#configuration)
-9. [Deployment](#deployment)
-10. [Project Structure](#project-structure)
-11. [Testing](#testing)
-12. [Known Limitations](#known-limitations)
-13. [Roadmap](#roadmap)
-14. [Screenshots](#screenshots)
+2. [Demo Screenshots](#demo-screenshots)
+3. [Features](#features)
+4. [System Architecture](#system-architecture)
+5. [System Design](#system-design)
+6. [Security Design](#security-design)
+7. [Route Reference](#route-reference)
+8. [Quick Start](#quick-start)
+9. [Configuration](#configuration)
+10. [Deployment](#deployment)
+11. [Project Structure](#project-structure)
+12. [Testing](#testing)
+13. [Known Limitations](#known-limitations)
+14. [Roadmap](#roadmap)
 15. [License](#license)
 
 ---
@@ -66,6 +60,41 @@ to the current tenant (see [Multi-Tenancy Design](#multi-tenancy-design)).
 | Password hashing | Django PBKDF2, with transparent upgrade of legacy Werkzeug hashes on login |
 | External services | Google Identity Services (customer sign-in), Gemini API (assistant), both optional |
 | Hosting hints | Vercel-aware settings (`VERCEL`, `VERCEL_URL`), WSGI entry point |
+
+---
+
+## Demo Screenshots
+
+<table>
+  <tr>
+    <td width="33%" align="center"><img src="docs/screenshots/landing.png" alt="Landing Page" width="100%"><br><b>1. Landing Page</b><br>Register a workspace or find one</td>
+    <td width="33%" align="center"><img src="docs/screenshots/workspace-login.png" alt="Workspace Login" width="100%"><br><b>2. Workspace Login</b><br>Staff sign-in for a workspace</td>
+    <td width="33%" align="center"><img src="docs/screenshots/dashboard.png" alt="Staff Dashboard" width="100%"><br><b>3. Staff Dashboard</b><br>Totals, recent orders, activity feed</td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="docs/screenshots/customers.png" alt="Customer Management" width="100%"><br><b>4. Customer Management</b><br>Records and portal invites</td>
+    <td width="33%" align="center"><img src="docs/screenshots/products.png" alt="Product Management" width="100%"><br><b>5. Product Management</b><br>Catalog with price and stock</td>
+    <td width="33%" align="center"><img src="docs/screenshots/orders.png" alt="Order Management" width="100%"><br><b>6. Order Management</b><br>Status tracking per order</td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="docs/screenshots/invoices.png" alt="Invoice Management" width="100%"><br><b>7. Invoice Management</b><br>Status, totals, due dates</td>
+    <td width="33%" align="center"><img src="docs/screenshots/tickets.png" alt="Support Tickets" width="100%"><br><b>8. Support Tickets</b><br>Priority and status tracking</td>
+    <td width="33%" align="center"><img src="docs/screenshots/subscriptions.png" alt="Subscription Plans" width="100%"><br><b>9. Subscription Plans</b><br>Billing cycles and status</td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="docs/screenshots/departments.png" alt="Departments" width="100%"><br><b>10. Departments</b><br>Team structure</td>
+    <td width="33%" align="center"><img src="docs/screenshots/employees.png" alt="Employees" width="100%"><br><b>11. Employees</b><br>Staff directory</td>
+    <td width="33%" align="center"><img src="docs/screenshots/platform-login.png" alt="Platform Admin Login" width="100%"><br><b>12. Platform Admin Login</b><br>Operator sign-in</td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="docs/screenshots/customer-storefront.png" alt="Customer Storefront" width="100%"><br><b>13. Customer Storefront</b><br>Public shop with cart and checkout</td>
+    <td width="33%" align="center"><img src="docs/screenshots/customer-signup.png" alt="Customer Sign-up" width="100%"><br><b>14. Customer Sign-up</b><br>Email or Google</td>
+    <td width="33%" align="center"><img src="docs/screenshots/customer-login.png" alt="Customer Login" width="100%"><br><b>15. Customer Login</b><br>Portal sign-in</td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="docs/screenshots/customer-portal.png" alt="Customer Portal" width="100%"><br><b>16. Customer Portal</b><br>Own orders, invoices, tickets</td>
+  </tr>
+</table>
 
 ---
 
@@ -673,34 +702,6 @@ These are documented so you can plan around them or fix them.
 - Vendored front-end assets or a build pipeline with a CSP header
 - Health and readiness endpoints, structured logs, and metrics
 - Containerization and CI (lint, tests, migrations check)
-
----
-
-## Screenshots
-
-<div align="center">
-  <img src="docs/screenshots/landing.png" width="300" alt="Fieldnote landing page" />
-  <img src="docs/screenshots/workspace-login.png" width="300" alt="Workspace sign in" />
-  <img src="docs/screenshots/dashboard.png" width="300" alt="Fieldnote staff dashboard" />
-  <br /><br />
-  <img src="docs/screenshots/customers.png" width="300" alt="Customer management" />
-  <img src="docs/screenshots/products.png" width="300" alt="Product management" />
-  <img src="docs/screenshots/orders.png" width="300" alt="Order management" />
-  <br /><br />
-  <img src="docs/screenshots/invoices.png" width="300" alt="Invoices overview" />
-  <img src="docs/screenshots/tickets.png" width="300" alt="Support ticket management" />
-  <img src="docs/screenshots/subscriptions.png" width="300" alt="Subscription management" />
-  <br /><br />
-  <img src="docs/screenshots/departments.png" width="300" alt="Department management" />
-  <img src="docs/screenshots/employees.png" width="300" alt="Employee management" />
-  <img src="docs/screenshots/platform-login.png" width="300" alt="Platform admin sign in" />
-  <br /><br />
-  <img src="docs/screenshots/customer-storefront.png" width="300" alt="Customer storefront" />
-  <img src="docs/screenshots/customer-signup.png" width="300" alt="Customer signup flow" />
-  <br /><br />
-  <img src="docs/screenshots/customer-login.png" width="300" alt="Customer sign in" />
-  <img src="docs/screenshots/customer-portal.png" width="300" alt="Customer portal" />
-</div>
 
 ---
 
